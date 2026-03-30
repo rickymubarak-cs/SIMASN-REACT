@@ -21,9 +21,7 @@ export const useGajiData = (): UseGajiDataReturn => {
         setLoading(true);
         setError(null);
         try {
-            console.log('useGajiData - Fetching with perangkatDaerah:', perangkatDaerah);
             const result = await gajiService.getAll(perangkatDaerah);
-            console.log('useGajiData - Result:', result);
             setData(result);
         } catch (err: any) {
             console.error('useGajiData - Error:', err);

@@ -21,9 +21,7 @@ export const useCutiData = (): UseCutiDataReturn => {
         setLoading(true);
         setError(null);
         try {
-            console.log('useCutiData - Fetching with perangkatDaerah:', perangkatDaerah);
             const result = await cutiService.getAll(perangkatDaerah);
-            console.log('useCutiData - Result:', result);
             setData(result);
         } catch (err: any) {
             console.error('useCutiData - Error:', err);

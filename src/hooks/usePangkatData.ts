@@ -21,9 +21,7 @@ export const usePangkatData = (): UsePangkatDataReturn => {
         setLoading(true);
         setError(null);
         try {
-            console.log('usePangkatData - Fetching with perangkatDaerah:', perangkatDaerah);
             const result = await pangkatService.getAll(perangkatDaerah);
-            console.log('usePangkatData - Result:', result);
             setData(result);
         } catch (err: any) {
             console.error('usePangkatData - Error:', err);

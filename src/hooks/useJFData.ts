@@ -21,9 +21,7 @@ export const useJFData = (): UseJFDataReturn => {
         setLoading(true);
         setError(null);
         try {
-            console.log('useJFData - Fetching with perangkatDaerah:', perangkatDaerah);
             const result = await jfService.getAll(perangkatDaerah);
-            console.log('useJFData - Result:', result);
             setData(result);
         } catch (err: any) {
             console.error('useJFData - Error:', err);

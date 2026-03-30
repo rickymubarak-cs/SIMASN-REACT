@@ -1,9 +1,9 @@
-// src/hooks/usePemberhentianData.ts
+// src/hooks/useDataRiwayat.ts
 import { useState, useEffect, useCallback } from 'react';
-import { pemberhentianService, PemberhentianData } from '../service/pemberhentianService';
+import { dataService, DataRiwayat } from '../service/dataService';
 
-interface UsePemberhentianDataReturn {
-    data: PemberhentianData[];
+interface UseDataRiwayatReturn {
+    data: DataRiwayat[];
     loading: boolean;
     error: string | null;
     perangkatDaerah: string;
@@ -11,8 +11,8 @@ interface UsePemberhentianDataReturn {
     refreshData: () => Promise<void>;
 }
 
-export const usePemberhentianData = (): UsePemberhentianDataReturn => {
-    const [data, setData] = useState<PemberhentianData[]>([]);
+export const useDataRiwayat = (): UseDataRiwayatReturn => {
+    const [data, setData] = useState<DataRiwayat[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [perangkatDaerah, setPerangkatDaerah] = useState<string>("");
@@ -21,11 +21,11 @@ export const usePemberhentianData = (): UsePemberhentianDataReturn => {
         setLoading(true);
         setError(null);
         try {
-            const result = await pemberhentianService.getAll(perangkatDaerah);
+            const result = await dataService.getAll(perangkatDaerah);
             setData(result);
         } catch (err: any) {
-            console.error('usePemberhentianData - Error:', err);
-            setError(err.message || "Gagal memuat data Pemberhentian ASN. Periksa koneksi VPN atau jaringan Anda.");
+            console.error('useDataRiwayat - Error:', err);
+            setError(err.message || "Gagal memuat data Riwayat Data. Periksa koneksi VPN atau jaringan Anda.");
         } finally {
             setLoading(false);
         }
@@ -45,4 +45,4 @@ export const usePemberhentianData = (): UsePemberhentianDataReturn => {
     };
 };
 
-export default usePemberhentianData;
+export default useDataRiwayat;

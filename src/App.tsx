@@ -7,11 +7,20 @@ import Cuti from './pages/Cuti';
 import Gaji from './pages/Gaji';
 import JF from './pages/JF';
 import Pemberhentian from './pages/Pemberhentian';
+import Kompetensi from './pages/Kompetensi';
+import Tubel from './pages/Tubel';
+import DataRiwayat from './pages/DataRiwayat';
+import Diklat from './pages/Diklat';
+import Slks from './pages/Slks';
+import IntegrasiSIASN from './pages/IntegrasiSIASN';
+import DataASN from './pages/DataASN';
 
 function App() {
-  const [activeTab, setActiveTab] = useState("pltplh");
+  // Set default activeTab ke "data_asn"
+  const [activeTab, setActiveTab] = useState("data_asn");
 
   const handleTabChange = (tabId: string) => {
+    console.log('handleTabChange called with:', tabId);
     setActiveTab(tabId);
   };
 
@@ -27,14 +36,26 @@ function App() {
         return <Cuti activeTab={activeTab} onTabChange={handleTabChange} />;
       case "gaji":
         return <Gaji activeTab={activeTab} onTabChange={handleTabChange} />;
-      case "jf":  // <-- Tambahkan case untuk jf
+      case "jf":
         return <JF activeTab={activeTab} onTabChange={handleTabChange} />;
       case "pemberhentian":
         return <Pemberhentian activeTab={activeTab} onTabChange={handleTabChange} />;
-      case "rekap_cuti":
-        return <div className="p-8 text-center">Halaman Rekap Cuti (Coming Soon)</div>;
+      case "kompetensi":
+        return <Kompetensi activeTab={activeTab} onTabChange={handleTabChange} />;
+      case "tubel":
+        return <Tubel activeTab={activeTab} onTabChange={handleTabChange} />;
+      case "data":
+        return <DataRiwayat activeTab={activeTab} onTabChange={handleTabChange} />;
+      case "diklat":
+        return <Diklat activeTab={activeTab} onTabChange={handleTabChange} />;
+      case "slks":
+        return <Slks activeTab={activeTab} onTabChange={handleTabChange} />;
+      case "data_asn":
+        return <DataASN activeTab={activeTab} onTabChange={handleTabChange} />;
+      case "integrasi_siasn":
+        return <IntegrasiSIASN activeTab={activeTab} onTabChange={handleTabChange} />;
       default:
-        return <PltPlh activeTab={activeTab} onTabChange={handleTabChange} />;
+        return <DataASN activeTab={activeTab} onTabChange={handleTabChange} />;
     }
   };
 

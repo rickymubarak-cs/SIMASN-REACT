@@ -24,7 +24,10 @@ const colorMap: Record<string, string> = {
     amber: 'bg-amber-50 text-amber-600',
     teal: 'bg-teal-50 text-teal-600',
     indigo: 'bg-indigo-50 text-indigo-600',
-    rose: 'bg-rose-50 text-rose-600'
+    rose: 'bg-rose-50 text-rose-600',
+    cyan: 'bg-cyan-50 text-cyan-600',
+    sky: 'bg-sky-50 text-sky-600',
+    violet: 'bg-violet-50 text-violet-600'
 };
 
 export const DashboardCard: React.FC<DashboardCardProps> = ({ label, value, icon, color }) => {

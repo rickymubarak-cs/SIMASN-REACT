@@ -1,22 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { AlertCircle, Search, Coffee } from 'lucide-react';
-import { useCutiData } from '../hooks/useCutiData';
+import { AlertCircle, Search, BookOpen } from 'lucide-react';
+import { useKompetensiData } from '../hooks/useKompetensiData';
 import { Navbar } from '../components/layout/Navbar';
 import { DashboardCard } from '../components/layout/DashboardCard';
-import { DataCardCuti } from '../components/cards/DataCardCuti';
-import { DetailModalCuti } from '../components/modals/DetailModalCuti';
+import { DataCardKompetensi } from '../components/cards/DataCardKompetensi';
+import { DetailModalKompetensi } from '../components/modals/DetailModalKompetensi';
 import { ActionModal } from '../components/modals/ActionModal';
-import { UploadModalCuti } from '../components/modals/UploadModalCuti';
+import { UploadModalKompetensi } from '../components/modals/UploadModalKompetensi';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { SearchBar } from '../components/common/SearchBar';
-import { cutiService } from '../service/cutiService';
+import { kompetensiService } from '../service/kompetensiService';
 
-interface CutiProps {
+interface KompetensiProps {
     activeTab: string;
     onTabChange: (tab: string) => void;
 }
 
-export default function Cuti({ activeTab, onTabChange }: CutiProps) {
+export default function Kompetensi({ activeTab, onTabChange }: KompetensiProps) {
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedData, setSelectedData] = useState(null);
@@ -27,19 +27,20 @@ export default function Cuti({ activeTab, onTabChange }: CutiProps) {
         upload: false
     });
 
-    const { data, loading, error, perangkatDaerah, setPerangkatDaerah, refreshData } = useCutiData();
+    const { data, loading, error, perangkatDaerah, setPerangkatDaerah, refreshData } = useKompetensiData();
     const itemsPerPage = 8;
 
-    // useEffect(() => {
-    //     console.log('Cuti Page - Data:', data);
-    //     console.log('Cuti Page - Data count:', data.length);
-    // }, [data]);
+    useEffect(() => {
+        console.log('Kompetensi Page - Data:', data);
+        console.log('Kompetensi Page - Data count:', data.length);
+    }, [data]);
 
     const filteredData = data.filter(item => {
         const namaLengkap = `${item.peg_gelar_depan || ""} ${item.peg_nama || ""} ${item.peg_gelar_belakang || ""}`.trim();
         return (
             namaLengkap.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (item.peg_nip || "").includes(searchTerm)
+            (item.peg_nip || "").includes(searchTerm) ||
+            (item.riw_kom_nama || "").toLowerCase().includes(searchTerm.toLowerCase())
         );
     });
 
@@ -51,7 +52,7 @@ export default function Cuti({ activeTab, onTabChange }: CutiProps) {
 
     const handlePerbaiki = async (id: string, keterangan: string) => {
         try {
-            await cutiService.updateStatus(id, 'perbaikan', keterangan);
+            await kompetensiService.updateStatus(id, 'perbaikan', keterangan);
             refreshData();
         } catch (err) {
             console.error("Error updating status:", err);
@@ -61,7 +62,7 @@ export default function Cuti({ activeTab, onTabChange }: CutiProps) {
 
     const handleTolak = async (id: string, alasan: string) => {
         try {
-            await cutiService.updateStatus(id, 'ditolak', alasan);
+            await kompetensiService.updateStatus(id, 'ditolak', alasan);
             refreshData();
         } catch (err) {
             console.error("Error updating status:", err);
@@ -72,7 +73,7 @@ export default function Cuti({ activeTab, onTabChange }: CutiProps) {
     const handleTerima = async (id: string, isTembusan: boolean) => {
         try {
             const status = isTembusan ? 'selesai' : 'diterima';
-            await cutiService.updateStatus(id, status);
+            await kompetensiService.updateStatus(id, status);
             refreshData();
         } catch (err) {
             console.error("Error updating status:", err);
@@ -82,7 +83,7 @@ export default function Cuti({ activeTab, onTabChange }: CutiProps) {
 
     const handleUpload = async (id: string, file: File) => {
         try {
-            await cutiService.uploadBerkas(id, file);
+            await kompetensiService.uploadBerkas(id, file);
             refreshData();
         } catch (err) {
             console.error("Error uploading file:", err);
@@ -92,8 +93,9 @@ export default function Cuti({ activeTab, onTabChange }: CutiProps) {
     };
 
     const handleLocalTabChange = (tab: string) => {
-        console.log('Cuti - handleLocalTabChange called with:', tab);
         onTabChange(tab);
+        setSearchTerm("");
+        setCurrentPage(1);
     };
 
     const handleLogout = () => {
@@ -112,12 +114,12 @@ export default function Cuti({ activeTab, onTabChange }: CutiProps) {
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
                 {/* Welcome Section */}
-                <div className="bg-gradient-to-r from-amber-600 to-amber-700 rounded-3xl p-6 text-white">
+                <div className="bg-gradient-to-r from-cyan-600 to-cyan-700 rounded-3xl p-6 text-white">
                     <h1 className="text-2xl font-black mb-1">
-                        Cuti Pegawai
+                        Pengembangan Kompetensi
                     </h1>
-                    <p className="text-amber-100 text-sm">
-                        Kelola dan pantau pengajuan cuti pegawai (tahunan, besar, sakit, dll)
+                    <p className="text-cyan-100 text-sm">
+                        Kelola dan pantau pengajuan pengembangan kompetensi / diklat pegawai
                     </p>
                 </div>
 
@@ -127,7 +129,7 @@ export default function Cuti({ activeTab, onTabChange }: CutiProps) {
                         label="Total Berkas"
                         value={data.length}
                         icon="Database"
-                        color="amber"
+                        color="cyan"
                     />
                     <DashboardCard
                         label="Unit Kerja"
@@ -183,7 +185,7 @@ export default function Cuti({ activeTab, onTabChange }: CutiProps) {
                     <>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                             {paginatedData.map((item, idx) => (
-                                <DataCardCuti
+                                <DataCardKompetensi
                                     key={idx}
                                     data={item}
                                     index={idx + 1 + (currentPage - 1) * itemsPerPage}
@@ -238,11 +240,11 @@ export default function Cuti({ activeTab, onTabChange }: CutiProps) {
                 ) : (
                     <div className="text-center py-20 bg-white rounded-3xl shadow-sm">
                         <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-8">
-                            <Coffee size={40} className="text-slate-300" />
+                            <BookOpen size={40} className="text-slate-300" />
                         </div>
-                        <h3 className="text-2xl font-black text-slate-800 uppercase tracking-tight">Belum Ada Data Cuti</h3>
+                        <h3 className="text-2xl font-black text-slate-800 uppercase tracking-tight">Belum Ada Data Pengembangan Kompetensi</h3>
                         <p className="text-slate-500 text-sm mt-2 max-w-md mx-auto">
-                            Saat ini belum terdapat pengajuan cuti pegawai
+                            Saat ini belum terdapat pengajuan pengembangan kompetensi / diklat
                             {perangkatDaerah ? ` untuk unit kerja dengan ID ${perangkatDaerah}` : ''}.
                         </p>
                         <p className="text-slate-400 text-xs mt-4">
@@ -250,7 +252,7 @@ export default function Cuti({ activeTab, onTabChange }: CutiProps) {
                         </p>
                         <button
                             onClick={refreshData}
-                            className="mt-6 px-6 py-2 bg-amber-500 text-white rounded-xl text-sm font-bold hover:bg-amber-600 transition-colors"
+                            className="mt-6 px-6 py-2 bg-cyan-500 text-white rounded-xl text-sm font-bold hover:bg-cyan-600 transition-colors"
                         >
                             Refresh Data
                         </button>
@@ -259,7 +261,7 @@ export default function Cuti({ activeTab, onTabChange }: CutiProps) {
             </main>
 
             {/* Modals */}
-            <DetailModalCuti
+            <DetailModalKompetensi
                 isOpen={modalState.detail}
                 onClose={() => setModalState(prev => ({ ...prev, detail: false }))}
                 data={selectedData}
@@ -283,7 +285,7 @@ export default function Cuti({ activeTab, onTabChange }: CutiProps) {
                 data={selectedData}
             />
 
-            <UploadModalCuti
+            <UploadModalKompetensi
                 isOpen={modalState.upload}
                 onClose={() => setModalState(prev => ({ ...prev, upload: false }))}
                 onSubmit={handleUpload}
