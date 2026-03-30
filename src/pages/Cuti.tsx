@@ -1,23 +1,22 @@
-// src/pages/PltPlh.tsx
 import React, { useState, useEffect } from 'react';
-import { AlertCircle, Search } from 'lucide-react';
-import { usePltplhData } from '../hooks/usePltplhData';
+import { AlertCircle, Search, Coffee } from 'lucide-react';
+import { useCutiData } from '../hooks/useCutiData';
 import { Navbar } from '../components/layout/Navbar';
 import { DashboardCard } from '../components/layout/DashboardCard';
-import { DataCard } from '../components/cards/DataCard';
-import { DetailModal } from '../components/modals/DetailModal';
+import { DataCardCuti } from '../components/cards/DataCardCuti';
+import { DetailModalCuti } from '../components/modals/DetailModalCuti';
 import { ActionModal } from '../components/modals/ActionModal';
-import { UploadModal } from '../components/modals/UploadModal';
+import { UploadModalCuti } from '../components/modals/UploadModalCuti';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { SearchBar } from '../components/common/SearchBar';
-import { pltplhService } from '../service/pltplhService';
+import { cutiService } from '../service/cutiService';
 
-interface PltPlhProps {
+interface CutiProps {
     activeTab: string;
     onTabChange: (tab: string) => void;
 }
 
-export default function PltPlh({ activeTab, onTabChange }: PltPlhProps) {
+export default function Cuti({ activeTab, onTabChange }: CutiProps) {
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedData, setSelectedData] = useState(null);
@@ -28,29 +27,31 @@ export default function PltPlh({ activeTab, onTabChange }: PltPlhProps) {
         upload: false
     });
 
-    const { data, loading, error, perangkatDaerah, setPerangkatDaerah, refreshData } = usePltplhData();
+    const { data, loading, error, perangkatDaerah, setPerangkatDaerah, refreshData } = useCutiData();
     const itemsPerPage = 8;
 
-    // Filter data based on search term
+    useEffect(() => {
+        console.log('Cuti Page - Data:', data);
+        console.log('Cuti Page - Data count:', data.length);
+    }, [data]);
+
     const filteredData = data.filter(item => {
-        const namaLengkap = `${item.peg_gelar_depan || ""} ${item.peg_nama || item.nama || ""} ${item.peg_gelar_belakang || ""}`.trim();
+        const namaLengkap = `${item.peg_gelar_depan || ""} ${item.peg_nama || ""} ${item.peg_gelar_belakang || ""}`.trim();
         return (
             namaLengkap.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (item.peg_nip || item.nip || "").includes(searchTerm)
+            (item.peg_nip || "").includes(searchTerm)
         );
     });
 
-    // Pagination
     const paginatedData = filteredData.slice(
         (currentPage - 1) * itemsPerPage,
         currentPage * itemsPerPage
     );
     const totalPages = Math.ceil(filteredData.length / itemsPerPage);
 
-    // Action handlers
     const handlePerbaiki = async (id: string, keterangan: string) => {
         try {
-            await pltplhService.updateStatus(id, 'perbaikan', keterangan);
+            await cutiService.updateStatus(id, 'perbaikan', keterangan);
             refreshData();
         } catch (err) {
             console.error("Error updating status:", err);
@@ -60,7 +61,7 @@ export default function PltPlh({ activeTab, onTabChange }: PltPlhProps) {
 
     const handleTolak = async (id: string, alasan: string) => {
         try {
-            await pltplhService.updateStatus(id, 'ditolak', alasan);
+            await cutiService.updateStatus(id, 'ditolak', alasan);
             refreshData();
         } catch (err) {
             console.error("Error updating status:", err);
@@ -71,7 +72,7 @@ export default function PltPlh({ activeTab, onTabChange }: PltPlhProps) {
     const handleTerima = async (id: string, isTembusan: boolean) => {
         try {
             const status = isTembusan ? 'selesai' : 'diterima';
-            await pltplhService.updateStatus(id, status);
+            await cutiService.updateStatus(id, status);
             refreshData();
         } catch (err) {
             console.error("Error updating status:", err);
@@ -81,7 +82,7 @@ export default function PltPlh({ activeTab, onTabChange }: PltPlhProps) {
 
     const handleUpload = async (id: string, file: File) => {
         try {
-            await pltplhService.uploadBerkas(id, file);
+            await cutiService.uploadBerkas(id, file);
             refreshData();
         } catch (err) {
             console.error("Error uploading file:", err);
@@ -91,7 +92,12 @@ export default function PltPlh({ activeTab, onTabChange }: PltPlhProps) {
     };
 
     const handleLocalTabChange = (tab: string) => {
+        console.log('Cuti - handleLocalTabChange called with:', tab);
         onTabChange(tab);
+    };
+
+    const handleLogout = () => {
+        console.log("Logout clicked");
     };
 
     return (
@@ -101,16 +107,17 @@ export default function PltPlh({ activeTab, onTabChange }: PltPlhProps) {
                 onTabChange={handleLocalTabChange}
                 userName="Administrator"
                 userRole="BKPSDM Kota Pontianak"
+                onLogout={handleLogout}
             />
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
                 {/* Welcome Section */}
-                <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-3xl p-6 text-white">
+                <div className="bg-gradient-to-r from-amber-600 to-amber-700 rounded-3xl p-6 text-white">
                     <h1 className="text-2xl font-black mb-1">
-                        PLT / PLH
+                        Cuti Pegawai
                     </h1>
-                    <p className="text-blue-100 text-sm">
-                        Kelola dan pantau pengajuan PLT (Pelaksana Tugas) dan PLH (Pejabat Laksana Harian)
+                    <p className="text-amber-100 text-sm">
+                        Kelola dan pantau pengajuan cuti pegawai (tahunan, besar, sakit, dll)
                     </p>
                 </div>
 
@@ -120,7 +127,7 @@ export default function PltPlh({ activeTab, onTabChange }: PltPlhProps) {
                         label="Total Berkas"
                         value={data.length}
                         icon="Database"
-                        color="blue"
+                        color="amber"
                     />
                     <DashboardCard
                         label="Unit Kerja"
@@ -176,11 +183,10 @@ export default function PltPlh({ activeTab, onTabChange }: PltPlhProps) {
                     <>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                             {paginatedData.map((item, idx) => (
-                                <DataCard
+                                <DataCardCuti
                                     key={idx}
                                     data={item}
                                     index={idx + 1 + (currentPage - 1) * itemsPerPage}
-                                    activeTab={activeTab}
                                     onDetail={() => {
                                         setSelectedData(item);
                                         setModalState(prev => ({ ...prev, detail: true }));
@@ -232,20 +238,31 @@ export default function PltPlh({ activeTab, onTabChange }: PltPlhProps) {
                 ) : (
                     <div className="text-center py-20 bg-white rounded-3xl shadow-sm">
                         <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-8">
-                            <Search size={40} className="text-slate-300" />
+                            <Coffee size={40} className="text-slate-300" />
                         </div>
-                        <h3 className="text-2xl font-black text-slate-800 uppercase tracking-tight">Data Tidak Ditemukan</h3>
-                        <p className="text-slate-400 text-sm mt-2">Silakan gunakan filter atau pencarian yang berbeda</p>
+                        <h3 className="text-2xl font-black text-slate-800 uppercase tracking-tight">Belum Ada Data Cuti</h3>
+                        <p className="text-slate-500 text-sm mt-2 max-w-md mx-auto">
+                            Saat ini belum terdapat pengajuan cuti pegawai
+                            {perangkatDaerah ? ` untuk unit kerja dengan ID ${perangkatDaerah}` : ''}.
+                        </p>
+                        <p className="text-slate-400 text-xs mt-4">
+                            Data akan muncul setelah ada pengajuan yang masuk ke sistem.
+                        </p>
+                        <button
+                            onClick={refreshData}
+                            className="mt-6 px-6 py-2 bg-amber-500 text-white rounded-xl text-sm font-bold hover:bg-amber-600 transition-colors"
+                        >
+                            Refresh Data
+                        </button>
                     </div>
                 )}
             </main>
 
             {/* Modals */}
-            <DetailModal
+            <DetailModalCuti
                 isOpen={modalState.detail}
                 onClose={() => setModalState(prev => ({ ...prev, detail: false }))}
                 data={selectedData}
-                activeTab={activeTab}
             />
 
             <ActionModal
@@ -266,7 +283,7 @@ export default function PltPlh({ activeTab, onTabChange }: PltPlhProps) {
                 data={selectedData}
             />
 
-            <UploadModal
+            <UploadModalCuti
                 isOpen={modalState.upload}
                 onClose={() => setModalState(prev => ({ ...prev, upload: false }))}
                 onSubmit={handleUpload}
