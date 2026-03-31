@@ -5,6 +5,7 @@ import {
     FileCheck, Award, Building, AlertTriangle, GraduationCap, LayoutDashboard,
     BarChart3, Settings2, Server, Link2, BookOpen as BookOpenIcon, RefreshCcw, Shield, Cloud, GitMerge, Zap, Globe, ShieldCheck, Key, Lock
 } from 'lucide-react';
+import logoPontianak from '../../assets/Pontianak.png';
 
 // ============================================
 // KONFIGURASI MENU UTAMA
@@ -115,7 +116,6 @@ export const Navbar: React.FC<NavbarProps> = ({
     };
 
     const handleMenuClick = (itemId: string) => {
-        console.log('Navbar - Menu clicked:', itemId);
         onTabChange(itemId);
         setIsMobileMenuOpen(false);
         setOpenDropdowns({});
@@ -149,7 +149,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         <div className="flex items-center">
                             <div className="flex-shrink-0 flex items-center">
                                 <img
-                                    src="https://simasn.pontianak.go.id/assets/icon.png"
+                                    src={logoPontianak}
                                     alt="SIMASN Logo"
                                     className="w-8 h-8 object-contain"
                                     onError={(e) => {

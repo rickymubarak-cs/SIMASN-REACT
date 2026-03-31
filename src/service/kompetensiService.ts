@@ -42,8 +42,8 @@ export const kompetensiService = {
     getAll: async (perangkatDaerah: string = ""): Promise<KompetensiData[]> => {
         try {
             const url = perangkatDaerah
-                ? `EndPointAPI/getkompetensi/${perangkatDaerah}`
-                : 'EndPointAPI/getkompetensi';
+                ? `/api/EndPointAPI/getkompetensi/${perangkatDaerah}`
+                : '/api/EndPointAPI/getkompetensi';
 
             const response = await API.get(url);
             console.log('Kompetensi API Response:', response.data);

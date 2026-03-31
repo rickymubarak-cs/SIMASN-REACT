@@ -53,8 +53,8 @@ export const slksService = {
     getAll: async (perangkatDaerah: string = ""): Promise<SlksData[]> => {
         try {
             const url = perangkatDaerah
-                ? `EndPointAPI/getslks/${perangkatDaerah}`
-                : 'EndPointAPI/getslks';
+                ? `api/EndPointAPI/getslks/${perangkatDaerah}`
+                : 'api/EndPointAPI/getslks';
 
             const response = await API.get(url);
             console.log('SLKS API Response:', response.data);

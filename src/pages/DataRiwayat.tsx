@@ -7,7 +7,7 @@ import { DataCardDataRiwayat } from '../components/cards/DataCardDataRiwayat';
 import { DetailModalDataRiwayat } from '../components/modals/DetailModalDataRiwayat';
 import { ActionModal } from '../components/modals/ActionModal';
 import { UploadModalDataRiwayat } from '../components/modals/UploadModalDataRiwayat';
-import { LoadingSpinner } from '../components/common/LoadingSpinner';
+import { SkeletonLoading } from '../components/common/SkeletonLoading';
 import { SearchBar } from '../components/common/SearchBar';
 import { dataService } from '../service/dataService';
 
@@ -166,7 +166,7 @@ export default function DataRiwayat({ activeTab, onTabChange }: DataRiwayatProps
 
                 {/* Data Grid */}
                 {loading ? (
-                    <LoadingSpinner />
+                    <SkeletonLoading />
                 ) : error ? (
                     <div className="text-center py-20 bg-white rounded-3xl shadow-sm">
                         <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-6">

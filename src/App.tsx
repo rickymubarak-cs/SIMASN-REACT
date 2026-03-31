@@ -20,7 +20,6 @@ function App() {
   const [activeTab, setActiveTab] = useState("data_asn");
 
   const handleTabChange = (tabId: string) => {
-    console.log('handleTabChange called with:', tabId);
     setActiveTab(tabId);
   };
 

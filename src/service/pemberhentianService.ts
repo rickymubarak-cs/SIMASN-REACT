@@ -92,8 +92,8 @@ export const pemberhentianService = {
     getAll: async (perangkatDaerah: string = ""): Promise<PemberhentianData[]> => {
         try {
             const url = perangkatDaerah
-                ? `EndPointAPI/getpemberhentian/${perangkatDaerah}`
-                : 'EndPointAPI/getpemberhentian';
+                ? `api/EndPointAPI/getpemberhentian/${perangkatDaerah}`
+                : 'api/EndPointAPI/getpemberhentian';
 
             const response = await API.get(url);
             console.log('Pemberhentian API Response:', response.data);

@@ -45,8 +45,8 @@ export const gajiService = {
     getAll: async (perangkatDaerah: string = ""): Promise<GajiData[]> => {
         try {
             const url = perangkatDaerah
-                ? `EndPointAPI/getgaji/${perangkatDaerah}`
-                : 'EndPointAPI/getgaji';
+                ? `/api/EndPointAPI/getgaji/${perangkatDaerah}`
+                : '/api/EndPointAPI/getgaji';
 
             const response = await API.get(url);
             console.log('Gaji API Response:', response.data);

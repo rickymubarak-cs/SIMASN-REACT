@@ -61,8 +61,8 @@ export const lppService = {
         try {
 
             const url = perangkatDaerah
-                ? `EndPointAPI/getlpp/${perangkatDaerah}`
-                : 'EndPointAPI/getlpp';
+                ? `/api/EndPointAPI/getlpp/${perangkatDaerah}`
+                : '/api/EndPointAPI/getlpp';
 
             const response = await API.get(url);
 

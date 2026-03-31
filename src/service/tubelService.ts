@@ -57,8 +57,8 @@ export const tubelService = {
     getAll: async (perangkatDaerah: string = ""): Promise<TubelData[]> => {
         try {
             const url = perangkatDaerah
-                ? `EndPointAPI/gettubel/${perangkatDaerah}`
-                : 'EndPointAPI/gettubel';
+                ? `api/EndPointAPI/gettubel/${perangkatDaerah}`
+                : 'api/EndPointAPI/gettubel';
 
             const response = await API.get(url);
             console.log('Tubel API Response:', response.data);

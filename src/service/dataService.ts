@@ -39,8 +39,8 @@ export const dataService = {
     getAll: async (perangkatDaerah: string = ""): Promise<DataRiwayat[]> => {
         try {
             const url = perangkatDaerah
-                ? `EndPointAPI/getdata/${perangkatDaerah}`
-                : 'EndPointAPI/getdata';
+                ? `api/EndPointAPI/getdata/${perangkatDaerah}`
+                : 'api/EndPointAPI/getdata';
 
             const response = await API.get(url);
             console.log('Data API Response:', response.data);

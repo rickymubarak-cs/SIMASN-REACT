@@ -7,7 +7,7 @@ import { DataCardSlks } from '../components/cards/DataCardSlks';
 import { DetailModalSlks } from '../components/modals/DetailModalSlks';
 import { ActionModal } from '../components/modals/ActionModal';
 import { UploadModalSlks } from '../components/modals/UploadModalSlks';
-import { LoadingSpinner } from '../components/common/LoadingSpinner';
+import { SkeletonLoading } from '../components/common/SkeletonLoading';
 import { SearchBar } from '../components/common/SearchBar';
 import { slksService } from '../service/slksService';
 
@@ -165,7 +165,7 @@ export default function Slks({ activeTab, onTabChange }: SlksProps) {
 
                 {/* Data Grid */}
                 {loading ? (
-                    <LoadingSpinner />
+                    <SkeletonLoading />
                 ) : error ? (
                     <div className="text-center py-20 bg-white rounded-3xl shadow-sm">
                         <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-6">

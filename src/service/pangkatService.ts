@@ -60,8 +60,8 @@ export const pangkatService = {
     getAll: async (perangkatDaerah: string = ""): Promise<PangkatData[]> => {
         try {
             const url = perangkatDaerah
-                ? `EndPointAPI/getpangkat/${perangkatDaerah}`
-                : 'EndPointAPI/getpangkat';
+                ? `api/EndPointAPI/getpangkat/${perangkatDaerah}`
+                : 'api/EndPointAPI/getpangkat';
 
             const response = await API.get(url);
 

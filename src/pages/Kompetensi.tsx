@@ -7,7 +7,7 @@ import { DataCardKompetensi } from '../components/cards/DataCardKompetensi';
 import { DetailModalKompetensi } from '../components/modals/DetailModalKompetensi';
 import { ActionModal } from '../components/modals/ActionModal';
 import { UploadModalKompetensi } from '../components/modals/UploadModalKompetensi';
-import { LoadingSpinner } from '../components/common/LoadingSpinner';
+import { SkeletonLoading } from '../components/common/SkeletonLoading';
 import { SearchBar } from '../components/common/SearchBar';
 import { kompetensiService } from '../service/kompetensiService';
 
@@ -166,7 +166,7 @@ export default function Kompetensi({ activeTab, onTabChange }: KompetensiProps) 
 
                 {/* Data Grid */}
                 {loading ? (
-                    <LoadingSpinner />
+                    <SkeletonLoading />
                 ) : error ? (
                     <div className="text-center py-20 bg-white rounded-3xl shadow-sm">
                         <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-6">

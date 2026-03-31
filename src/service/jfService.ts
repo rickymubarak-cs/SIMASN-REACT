@@ -62,8 +62,8 @@ export const jfService = {
     getAll: async (perangkatDaerah: string = ""): Promise<JFData[]> => {
         try {
             const url = perangkatDaerah
-                ? `EndPointAPI/getjf/${perangkatDaerah}`
-                : 'EndPointAPI/getjf';
+                ? `api/EndPointAPI/getjf/${perangkatDaerah}`
+                : 'api/EndPointAPI/getjf';
 
             const response = await API.get(url);
             console.log('JF API Response:', response.data);

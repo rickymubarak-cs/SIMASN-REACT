@@ -33,8 +33,8 @@ export const pltplhService = {
         try {
 
             const url = perangkatDaerah
-                ? `EndPointAPI/getpltplh/${perangkatDaerah}`
-                : 'EndPointAPI/getpltplh';
+                ? `api/EndPointAPI/getpltplh/${perangkatDaerah}`
+                : 'api/EndPointAPI/getpltplh';
 
             const response = await API.get(url);
 

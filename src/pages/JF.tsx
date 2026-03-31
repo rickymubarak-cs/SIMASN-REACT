@@ -7,7 +7,7 @@ import { DataCardJF } from '../components/cards/DataCardJF';
 import { DetailModalJF } from '../components/modals/DetailModalJF';
 import { ActionModal } from '../components/modals/ActionModal';
 import { UploadModalJF } from '../components/modals/UploadModalJF';
-import { LoadingSpinner } from '../components/common/LoadingSpinner';
+import { SkeletonLoading } from '../components/common/SkeletonLoading';
 import { SearchBar } from '../components/common/SearchBar';
 import { jfService } from '../service/jfService';
 
@@ -164,7 +164,7 @@ export default function JF({ activeTab, onTabChange }: JFProps) {
 
                 {/* Data Grid */}
                 {loading ? (
-                    <LoadingSpinner />
+                    <SkeletonLoading />
                 ) : error ? (
                     <div className="text-center py-20 bg-white rounded-3xl shadow-sm">
                         <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-6">

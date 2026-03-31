@@ -7,7 +7,7 @@ import { DataCardCuti } from '../components/cards/DataCardCuti';
 import { DetailModalCuti } from '../components/modals/DetailModalCuti';
 import { ActionModal } from '../components/modals/ActionModal';
 import { UploadModalCuti } from '../components/modals/UploadModalCuti';
-import { LoadingSpinner } from '../components/common/LoadingSpinner';
+import { SkeletonLoading } from '../components/common/SkeletonLoading';
 import { SearchBar } from '../components/common/SearchBar';
 import { cutiService } from '../service/cutiService';
 
@@ -164,7 +164,7 @@ export default function Cuti({ activeTab, onTabChange }: CutiProps) {
 
                 {/* Data Grid */}
                 {loading ? (
-                    <LoadingSpinner />
+                    < SkeletonLoading />
                 ) : error ? (
                     <div className="text-center py-20 bg-white rounded-3xl shadow-sm">
                         <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-6">

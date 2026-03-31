@@ -7,7 +7,7 @@ import { DataCardDiklat } from '../components/cards/DataCardDiklat';
 import { DetailModalDiklat } from '../components/modals/DetailModalDiklat';
 import { ActionModal } from '../components/modals/ActionModal';
 import { UploadModalDiklat } from '../components/modals/UploadModalDiklat';
-import { LoadingSpinner } from '../components/common/LoadingSpinner';
+import { SkeletonLoading } from '../components/common/SkeletonLoading';
 import { SearchBar } from '../components/common/SearchBar';
 import { diklatService } from '../service/diklatService';
 
@@ -166,7 +166,7 @@ export default function Diklat({ activeTab, onTabChange }: DiklatProps) {
 
                 {/* Data Grid */}
                 {loading ? (
-                    <LoadingSpinner />
+                    <SkeletonLoading />
                 ) : error ? (
                     <div className="text-center py-20 bg-white rounded-3xl shadow-sm">
                         <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-6">

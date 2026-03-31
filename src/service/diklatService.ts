@@ -38,8 +38,8 @@ export const diklatService = {
     getAll: async (perangkatDaerah: string = ""): Promise<DiklatData[]> => {
         try {
             const url = perangkatDaerah
-                ? `EndPointAPI/getdiklat/${perangkatDaerah}`
-                : 'EndPointAPI/getdiklat';
+                ? `/api/EndPointAPI/getdiklat/${perangkatDaerah}`
+                : '/api/EndPointAPI/getdiklat';
 
             const response = await API.get(url);
             console.log('Diklat API Response:', response.data);

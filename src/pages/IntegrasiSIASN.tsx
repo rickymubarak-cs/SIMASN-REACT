@@ -4,13 +4,24 @@ import {
     Key, Shield, CheckCircle, XCircle, AlertCircle, Clock,
     GitMerge, Zap, Globe, ShieldCheck, Lock, Eye, Download,
     FileText, Calendar, ChevronRight, ChevronDown, ChevronUp,
-    Briefcase, FileCheck, Wallet, TrendingUp
+    Briefcase, FileCheck, Wallet, TrendingUp, Loader2, X,
+    ChevronLeft, ExternalLink
 } from 'lucide-react';
 import { Navbar } from '../components/layout/Navbar';
 import { bknApiService } from '../service/bknApiService';
+import { SearchBar } from '../components/common/SearchBar';
+import { LoadingSpinner } from '../components/common/LoadingSpinner';
+import { EmptyState } from '../components/common/EmptyState';
+import { StatusBadge } from '../components/common/StatusBadge';
+import { PegawaiInfo } from '../components/pegawai/PegawaiInfo';
 
+// ============================================
+// TYPE DEFINITIONS
+// ============================================
 interface DataASN {
+    id?: string;
     nip: string;
+    nipBaru?: string;
     nipLama: string;
     nama: string;
     gelarDepan: string;
@@ -21,6 +32,7 @@ interface DataASN {
     agama: string;
     statusPerkawinan: string;
     email: string;
+    emailGov?: string;
     alamat: string;
     statusPegawai: string;
     jenisPegawai: string;
@@ -42,6 +54,9 @@ interface DataASN {
     instansiKerjaNama?: string;
     satuanKerjaKerjaNama?: string;
     jabatanNama?: string;
+    unorNama?: string;
+    kartuAsn?: string;
+    noHp?: string;
     [key: string]: any;
 }
 
@@ -50,12 +65,26 @@ interface TokenStatus {
     sso: { active: boolean };
 }
 
+interface SearchResult {
+    id: string;
+    nip: string;
+    nip_lama: string;
+    nama: string;
+    nama_lengkap: string;
+    gelar_depan: string;
+    gelar_belakang: string;
+}
+
 interface IntegrasiSIASNProps {
     activeTab: string;
     onTabChange: (tab: string) => void;
 }
 
+// ============================================
+// MAIN COMPONENT
+// ============================================
 export default function IntegrasiSIASN({ activeTab, onTabChange }: IntegrasiSIASNProps) {
+    // ========== STATE ==========
     const [nip, setNip] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
     const [data, setData] = useState<DataASN | null>(null);
@@ -63,27 +92,26 @@ export default function IntegrasiSIASN({ activeTab, onTabChange }: IntegrasiSIAS
     const [syncing, setSyncing] = useState(false);
     const [tokenStatus, setTokenStatus] = useState<TokenStatus | null>(null);
     const [currentTab, setCurrentTab] = useState('profile');
-    const [expandedSections, setExpandedSections] = useState({
-        profile: true,
-        dokumen: false,
-        sk: false,
-        pendidikan: false,
-        instansi: false,
-        keuangan: false
-    });
-    const [searchResults, setSearchResults] = useState<any[]>([]);
+    const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
     const [showSearchResults, setShowSearchResults] = useState(false);
-    const [searchPage, setSearchPage] = useState(1);
+    const [searchPage] = useState(1);
     const [searchTotal, setSearchTotal] = useState(0);
     const [searchLoading, setSearchLoading] = useState(false);
     const [dokumenList, setDokumenList] = useState<any[]>([]);
     const [dokumenLoading, setDokumenLoading] = useState(false);
 
-    // Fetch token status on mount
+    // State untuk accordion preview dokumen
+    const [expandedDocId, setExpandedDocId] = useState<string | null>(null);
+    const [docPreviewUrls, setDocPreviewUrls] = useState<Record<string, string>>({});
+    const [docPreviewLoading, setDocPreviewLoading] = useState<Record<string, boolean>>({});
+    const [docPreviewError, setDocPreviewError] = useState<Record<string, boolean>>({});
+
+    // ========== EFFECTS ==========
     useEffect(() => {
         fetchTokenStatus();
     }, []);
 
+    // ========== FUNGSI API ==========
     const fetchTokenStatus = async () => {
         try {
             const result = await bknApiService.checkTokenStatus();
@@ -105,18 +133,11 @@ export default function IntegrasiSIASN({ activeTab, onTabChange }: IntegrasiSIAS
         try {
             const result = await bknApiService.searchPegawai(searchTerm, searchPage, 10);
 
-            // Perbaiki: pastikan result.data adalah array
             if (result.success) {
-                // Handle berbagai kemungkinan struktur response
-                let dataArray = [];
+                let dataArray: SearchResult[] = [];
                 if (Array.isArray(result.data)) {
                     dataArray = result.data;
-                } else if (result.data?.data && Array.isArray(result.data.data)) {
-                    dataArray = result.data.data;
-                } else if (result.data?.pegawai && Array.isArray(result.data.pegawai)) {
-                    dataArray = result.data.pegawai;
                 }
-
                 setSearchResults(dataArray);
                 setSearchTotal(result.pagination?.total || dataArray.length);
                 setShowSearchResults(true);
@@ -136,33 +157,17 @@ export default function IntegrasiSIASN({ activeTab, onTabChange }: IntegrasiSIAS
     };
 
     const handleSelectPegawai = (selectedNip: string) => {
-        console.log('🖱️ [handleSelectPegawai] Raw selected NIP:', selectedNip);
-        console.log('🖱️ [handleSelectPegawai] Type:', typeof selectedNip);
-        console.log('🖱️ [handleSelectPegawai] Length:', selectedNip?.length);
-
-        // Bersihkan NIP dari karakter yang tidak perlu
         let cleanNip = String(selectedNip || '').trim();
 
-        // Jika NIP masih kosong, coba ambil dari state lain
-        if (!cleanNip && searchResults.length > 0) {
-            console.warn('⚠️ NIP kosong, mencoba ambil dari hasil pencarian pertama');
-            cleanNip = searchResults[0]?.nip || searchResults[0]?.peg_nip || '';
-        }
-
-        console.log('🖱️ [handleSelectPegawai] Cleaned NIP:', cleanNip);
-
-        // Validasi NIP
         if (!cleanNip) {
             console.error('❌ NIP is empty');
             alert('NIP tidak ditemukan');
             return;
         }
 
-        // Pastikan NIP adalah 18 digit angka
         const nipRegex = /^\d{18}$/;
         if (!nipRegex.test(cleanNip)) {
             console.error('❌ Invalid NIP format:', cleanNip);
-            console.log('📝 NIP characters:', cleanNip.split('').map(c => ({ char: c, code: c.charCodeAt(0) })));
             alert(`NIP tidak valid (harus 18 digit angka). Diterima: ${cleanNip}`);
             return;
         }
@@ -173,48 +178,24 @@ export default function IntegrasiSIASN({ activeTab, onTabChange }: IntegrasiSIAS
     };
 
     const fetchDataFromBKN = async (selectedNip: string) => {
-        console.log('🚀 [fetchDataFromBKN] Starting fetch for NIP:', selectedNip);
-        console.log('🚀 [fetchDataFromBKN] NIP type:', typeof selectedNip);
-        console.log('🚀 [fetchDataFromBKN] NIP length:', selectedNip?.length);
-
-        // Validasi NIP
         if (!selectedNip || selectedNip.length !== 18) {
-            console.error('❌ [fetchDataFromBKN] Invalid NIP format:', selectedNip);
             alert('NIP harus 18 digit');
-            setLoading(false);
             return;
         }
 
         setLoading(true);
         try {
             const result = await bknApiService.getDataASN(selectedNip);
-            console.log('📦 [fetchDataFromBKN] BKN API Response:', result);
 
             if (result.success && result.data) {
-                console.log('✅ [fetchDataFromBKN] Data received:', {
-                    nip: result.data.nip,
-                    nama: result.data.nama,
-                    hasData: !!result.data
-                });
                 setData(result.data);
-
-                // Load dokumen setelah data ASN didapat
                 await loadDokumen(selectedNip);
-
-                // Fetch additional data
-                Promise.all([
-                    bknApiService.getRiwayatJabatan(selectedNip),
-                    bknApiService.getRiwayatGolongan(selectedNip),
-                    bknApiService.getRiwayatKGB(selectedNip)
-                ]).catch(err => console.error('Error fetching additional data:', err));
-
             } else {
-                console.warn('⚠️ [fetchDataFromBKN] No data from BKN API:', result.message);
                 alert(result.message || 'Data tidak ditemukan');
                 setData(null);
             }
         } catch (error) {
-            console.error('❌ [fetchDataFromBKN] Error:', error);
+            console.error('Error fetching data:', error);
             alert('Gagal mengambil data dari BKN');
         } finally {
             setLoading(false);
@@ -229,7 +210,6 @@ export default function IntegrasiSIASN({ activeTab, onTabChange }: IntegrasiSIAS
 
         setSyncing(true);
         try {
-            // Simpan data ke database lokal
             const result = await bknApiService.getSavedData(nip);
             if (result.success) {
                 alert('Sinkronisasi berhasil! Data telah disimpan ke database lokal.');
@@ -244,16 +224,78 @@ export default function IntegrasiSIASN({ activeTab, onTabChange }: IntegrasiSIAS
         }
     };
 
-    const toggleSection = (section: keyof typeof expandedSections) => {
-        setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
+    const loadDokumen = async (selectedNip: string) => {
+        if (!selectedNip) return;
+
+        setDokumenLoading(true);
+        try {
+            const result = await bknApiService.getDokumenList(selectedNip);
+            if (result.success && result.data) {
+                setDokumenList(result.data);
+            } else {
+                setDokumenList([]);
+            }
+        } catch (error) {
+            console.error('Error loading dokumen:', error);
+            setDokumenList([]);
+        } finally {
+            setDokumenLoading(false);
+        }
     };
 
-    const formatGender = (gender: string) => {
-        if (!gender) return '-';
-        const g = gender.toUpperCase();
-        if (g === 'L' || g === 'LAKI-LAKI' || g === 'M') return 'Laki-laki';
-        if (g === 'P' || g === 'PEREMPUAN' || g === 'F') return 'Perempuan';
-        return gender;
+    // ========== FUNGSI ACCORDION PREVIEW ==========
+    const toggleDocPreview = async (doc: any) => {
+        const docId = doc.id || doc.object;
+
+        if (expandedDocId === docId) {
+            // Tutup preview
+            setExpandedDocId(null);
+        } else {
+            // Buka preview untuk dokumen ini
+            setExpandedDocId(docId);
+
+            // Jika belum ada URL preview, buat dan muat
+            if (!docPreviewUrls[docId]) {
+                setDocPreviewLoading(prev => ({ ...prev, [docId]: true }));
+                setDocPreviewError(prev => ({ ...prev, [docId]: false }));
+
+                try {
+                    const url = bknApiService.previewDokumen(doc.object);
+                    setDocPreviewUrls(prev => ({ ...prev, [docId]: url }));
+
+                    // Test if URL is accessible
+                    const response = await fetch(url, { method: 'HEAD' });
+                    if (!response.ok) {
+                        setDocPreviewError(prev => ({ ...prev, [docId]: true }));
+                    }
+                } catch (error) {
+                    console.error('Preview error:', error);
+                    setDocPreviewError(prev => ({ ...prev, [docId]: true }));
+                } finally {
+                    setDocPreviewLoading(prev => ({ ...prev, [docId]: false }));
+                }
+            }
+        }
+    };
+
+    // ========== UTILITY FUNCTIONS ==========
+    const getTokenBadge = () => {
+        const oauthActive = tokenStatus?.oauth?.active;
+        const ssoActive = tokenStatus?.sso?.active;
+
+        if (oauthActive && ssoActive) {
+            return { status: 'success' as const, text: 'Terhubung' };
+        } else if (oauthActive || ssoActive) {
+            return { status: 'warning' as const, text: 'Sebagian Terhubung' };
+        }
+        return { status: 'danger' as const, text: 'Tidak Terhubung' };
+    };
+
+    const tokenBadge = getTokenBadge();
+    const TokenIcon = tokenBadge.status === 'success' ? CheckCircle : tokenBadge.status === 'warning' ? AlertCircle : XCircle;
+
+    const handleLogout = () => {
+        console.log("Logout clicked");
     };
 
     const formatDate = (dateStr: string) => {
@@ -271,50 +313,17 @@ export default function IntegrasiSIASN({ activeTab, onTabChange }: IntegrasiSIAS
         }
     };
 
-    const getTokenStatusBadge = () => {
-        const oauthActive = tokenStatus?.oauth?.active;
-        const ssoActive = tokenStatus?.sso?.active;
-
-        if (oauthActive && ssoActive) {
-            return { status: 'success', text: 'Terhubung', icon: CheckCircle };
-        } else if (oauthActive || ssoActive) {
-            return { status: 'warning', text: 'Sebagian Terhubung', icon: AlertCircle };
-        }
-        return { status: 'danger', text: 'Tidak Terhubung', icon: XCircle };
+    const formatGender = (gender: string) => {
+        if (!gender) return '-';
+        const g = gender.toUpperCase();
+        if (g === 'L' || g === 'LAKI-LAKI' || g === 'M') return 'Laki-laki';
+        if (g === 'P' || g === 'PEREMPUAN' || g === 'F') return 'Perempuan';
+        return gender;
     };
 
-    // Tambahkan fungsi untuk memuat dokumen
-    const loadDokumen = async (nip: string) => {
-        if (!nip) return;
-
-        setDokumenLoading(true);
-        try {
-            const result = await bknApiService.getDokumenList(nip);
-            if (result.success && result.data) {
-                setDokumenList(result.data);
-            } else {
-                setDokumenList([]);
-            }
-        } catch (error) {
-            console.error('Error loading dokumen:', error);
-            setDokumenList([]);
-        } finally {
-            setDokumenLoading(false);
-        }
-    };
-
-
-
-    const tokenBadge = getTokenStatusBadge();
-    const TokenIcon = tokenBadge.icon;
-
-    const handleLogout = () => {
-        console.log("Logout clicked");
-    };
-
+    // ========== RENDER ==========
     return (
         <div className="min-h-screen bg-[#F1F5F9]">
-            {/* Navbar */}
             <Navbar
                 activeTab={activeTab}
                 onTabChange={onTabChange}
@@ -344,9 +353,7 @@ export default function IntegrasiSIASN({ activeTab, onTabChange }: IntegrasiSIAS
                             </div>
                             <div>
                                 <p className="text-xs text-slate-400">Data ASN</p>
-                                <p className="text-2xl font-bold text-slate-800">
-                                    {data ? '1' : '0'}
-                                </p>
+                                <p className="text-2xl font-bold text-slate-800">{data ? '1' : '0'}</p>
                             </div>
                         </div>
                     </div>
@@ -374,8 +381,7 @@ export default function IntegrasiSIASN({ activeTab, onTabChange }: IntegrasiSIAS
                                 <p className="text-sm font-mono text-slate-800">
                                     {tokenStatus?.oauth?.expires
                                         ? `Exp: ${new Date(tokenStatus.oauth.expires).toLocaleDateString()}`
-                                        : '-'
-                                    }
+                                        : '-'}
                                 </p>
                             </div>
                         </div>
@@ -387,122 +393,34 @@ export default function IntegrasiSIASN({ activeTab, onTabChange }: IntegrasiSIAS
                             </div>
                             <div>
                                 <p className="text-xs text-slate-400">Last Sync</p>
-                                <p className="text-sm font-medium text-slate-800">
-                                    {new Date().toLocaleDateString()}
-                                </p>
+                                <p className="text-sm font-medium text-slate-800">{new Date().toLocaleDateString()}</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Search Section */}
-                <div className="bg-white rounded-2xl p-5 shadow-sm">
-                    <div className="flex flex-col md:flex-row gap-4">
-                        <div className="flex-1 relative">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                            <input
-                                type="text"
-                                placeholder="Cari berdasarkan NIP atau Nama Pegawai..."
-                                className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                                value={searchTerm}
-                                onChange={(e) => {
-                                    setSearchTerm(e.target.value);
-                                    if (e.target.value.length === 0) {
-                                        setShowSearchResults(false);
-                                    }
-                                }}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                        handleSearchPegawai();
-                                    }
-                                }}
-                            />
-                        </div>
-                        <button
-                            onClick={handleSearchPegawai}
-                            disabled={searchLoading}
-                            className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-all flex items-center gap-2 disabled:opacity-50"
-                        >
-                            {searchLoading ? <RefreshCcw size={18} className="animate-spin" /> : <Search size={18} />}
-                            Cari Pegawai
-                        </button>
-                        <button
-                            onClick={() => fetchTokenStatus()}
-                            className="px-6 py-3 bg-slate-100 text-slate-700 rounded-xl font-medium hover:bg-slate-200 transition-all flex items-center gap-2"
-                        >
-                            <RefreshCcw size={18} />
-                            Cek Status Token
-                        </button>
-                    </div>
-
-                    {/* Search Results Dropdown */}
-                    {showSearchResults && (
-                        <div className="mt-4 border border-slate-200 rounded-xl overflow-hidden">
-                            <div className="bg-slate-50 px-4 py-2 border-b border-slate-200">
-                                <p className="text-sm text-slate-600">
-                                    Ditemukan {searchTotal} pegawai
-                                </p>
-                            </div>
-                            <div className="max-h-64 overflow-y-auto">
-                                {!Array.isArray(searchResults) || searchResults.length === 0 ? (
-                                    <div className="p-4 text-center text-slate-500">
-                                        {searchLoading ? 'Mencari...' : 'Tidak ada data ditemukan'}
-                                    </div>
-                                ) : (
-                                    searchResults.map((pegawai, idx) => {
-                                        // Debug: lihat struktur data
-                                        console.log(`🔍 [Result ${idx}] Raw data:`, pegawai);
-
-                                        // Ambil NIP dari berbagai kemungkinan field
-                                        const nipValue = pegawai.nip || pegawai.peg_nip || pegawai.nipBaru || '';
-                                        const namaValue = pegawai.nama || pegawai.peg_nama || '';
-
-                                        console.log(`🔍 [Result ${idx}] Extracted NIP:`, nipValue, 'Length:', nipValue.length);
-
-                                        // Validasi NIP sebelum ditampilkan
-                                        const isValidNip = /^\d{18}$/.test(String(nipValue));
-
-                                        return (
-                                            <button
-                                                key={idx}
-                                                onClick={() => {
-                                                    if (isValidNip) {
-                                                        console.log('🖱️ Clicked NIP:', nipValue);
-                                                        handleSelectPegawai(nipValue);
-                                                    } else {
-                                                        console.error('❌ Cannot select: invalid NIP', nipValue);
-                                                        alert(`NIP tidak valid: ${nipValue}`);
-                                                    }
-                                                }}
-                                                disabled={!isValidNip}
-                                                className={`w-full flex items-center justify-between px-4 py-3 transition-colors border-b border-slate-100 last:border-0 text-left ${isValidNip
-                                                    ? 'hover:bg-slate-50 cursor-pointer'
-                                                    : 'opacity-50 cursor-not-allowed'
-                                                    }`}
-                                            >
-                                                <div>
-                                                    <p className="font-medium text-slate-800">{namaValue}</p>
-                                                    <p className="text-xs text-slate-400 font-mono">
-                                                        {nipValue || '-'}
-                                                        {!isValidNip && <span className="ml-2 text-red-500">(NIP tidak valid)</span>}
-                                                    </p>
-                                                </div>
-                                                {isValidNip && <ChevronRight size={16} className="text-slate-400" />}
-                                            </button>
-                                        );
-                                    })
-                                )}
-                            </div>
-                        </div>
-                    )}
-                </div>
+                <SearchBar
+                    searchTerm={searchTerm}
+                    onSearchChange={setSearchTerm}
+                    onSearch={handleSearchPegawai}
+                    loading={searchLoading}
+                    results={searchResults}
+                    showResults={showSearchResults}
+                    totalResults={searchTotal}
+                    onSelectResult={handleSelectPegawai}
+                    onClearResults={() => {
+                        setSearchResults([]);
+                        setShowSearchResults(false);
+                    }}
+                    placeholder="Cari berdasarkan NIP atau Nama Pegawai..."
+                    buttonText="Cari Pegawai"
+                    variant="integration"
+                />
 
                 {/* Data Display */}
                 {loading ? (
-                    <div className="bg-white rounded-2xl p-12 text-center">
-                        <RefreshCcw size={40} className="animate-spin mx-auto text-indigo-500 mb-4" />
-                        <p className="text-slate-500">Memuat data dari BKN...</p>
-                    </div>
+                    <LoadingSpinner text="Memuat data dari BKN..." />
                 ) : data ? (
                     <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
                         {/* Pegawai Info Header */}
@@ -529,16 +447,14 @@ export default function IntegrasiSIASN({ activeTab, onTabChange }: IntegrasiSIAS
                                         </span>
                                     </div>
                                 </div>
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={handleSyncWithSIASN}
-                                        disabled={syncing}
-                                        className="px-4 py-2 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition-all flex items-center gap-2 disabled:opacity-50"
-                                    >
-                                        {syncing ? <RefreshCcw size={16} className="animate-spin" /> : <GitMerge size={16} />}
-                                        Sinkronisasi SIASN
-                                    </button>
-                                </div>
+                                <button
+                                    onClick={handleSyncWithSIASN}
+                                    disabled={syncing}
+                                    className="px-4 py-2 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition-all flex items-center gap-2 disabled:opacity-50"
+                                >
+                                    {syncing ? <RefreshCcw size={16} className="animate-spin" /> : <GitMerge size={16} />}
+                                    Sinkronisasi SIASN
+                                </button>
                             </div>
                         </div>
 
@@ -572,307 +488,188 @@ export default function IntegrasiSIASN({ activeTab, onTabChange }: IntegrasiSIAS
 
                         {/* Tab Content */}
                         <div className="p-6">
-                            {/* Data Pribadi Tab */}
-                            {currentTab === 'profile' && data && (
-                                <div className="space-y-4">
-                                    {/* Identitas Pribadi */}
-                                    <div className="border rounded-xl overflow-hidden">
-                                        <button
-                                            onClick={() => toggleSection('profile')}
-                                            className="w-full flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 transition-colors"
-                                        >
-                                            <span className="font-semibold text-slate-700 flex items-center gap-2">
-                                                <User size={18} className="text-indigo-600" />
-                                                Identitas Pribadi
-                                            </span>
-                                            {expandedSections.profile ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                                        </button>
-                                        {expandedSections.profile && (
-                                            <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                                <div>
-                                                    <label className="text-xs text-slate-400">NIP Baru</label>
-                                                    <p className="font-medium font-mono">{data.nipBaru || '-'}</p>
-                                                </div>
-                                                <div>
-                                                    <label className="text-xs text-slate-400">Nama Lengkap</label>
-                                                    <p className="font-medium">{data.nama || '-'}</p>
-                                                </div>
-                                                <div>
-                                                    <label className="text-xs text-slate-400">Gelar Belakang</label>
-                                                    <p className="font-medium">{data.gelarBelakang || '-'}</p>
-                                                </div>
-                                                <div>
-                                                    <label className="text-xs text-slate-400">Tempat, Tanggal Lahir</label>
-                                                    <p className="font-medium">{data.tempatLahir || '-'}, {data.tglLahir || '-'}</p>
-                                                </div>
-                                                <div>
-                                                    <label className="text-xs text-slate-400">Jenis Kelamin</label>
-                                                    <p className="font-medium">{data.jenisKelamin === 'M' ? 'Laki-laki' : 'Perempuan'}</p>
-                                                </div>
-                                                <div>
-                                                    <label className="text-xs text-slate-400">Agama</label>
-                                                    <p className="font-medium">{data.agama || '-'}</p>
-                                                </div>
-                                                <div>
-                                                    <label className="text-xs text-slate-400">Email</label>
-                                                    <p className="font-medium">{data.email || '-'}</p>
-                                                </div>
-                                                <div>
-                                                    <label className="text-xs text-slate-400">Email Pemerintah</label>
-                                                    <p className="font-medium">{data.emailGov || '-'}</p>
-                                                </div>
-                                                <div>
-                                                    <label className="text-xs text-slate-400">No. HP</label>
-                                                    <p className="font-medium">{data.noHp || '-'}</p>
-                                                </div>
-                                                <div>
-                                                    <label className="text-xs text-slate-400">Alamat</label>
-                                                    <p className="font-medium">{data.alamat || '-'}</p>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
+                            {currentTab === 'profile' && <PegawaiInfo data={data} />}
 
-                                    {/* Dokumen Kepegawaian */}
-                                    <div className="border rounded-xl overflow-hidden">
-                                        <button
-                                            onClick={() => toggleSection('dokumen')}
-                                            className="w-full flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 transition-colors"
-                                        >
-                                            <span className="font-semibold text-slate-700 flex items-center gap-2">
-                                                <FileText size={18} className="text-indigo-600" />
-                                                Dokumen Kepegawaian
-                                            </span>
-                                            {expandedSections.dokumen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                                        </button>
-                                        {expandedSections.dokumen && (
-                                            <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                                <div>
-                                                    <label className="text-xs text-slate-400">Nomor Karpeg</label>
-                                                    <p className="font-medium">{data.noSeriKarpeg || '-'}</p>
-                                                </div>
-                                                <div>
-                                                    <label className="text-xs text-slate-400">Nomor Taspen</label>
-                                                    <p className="font-medium">{data.noTaspen || '-'}</p>
-                                                </div>
-                                                <div>
-                                                    <label className="text-xs text-slate-400">NPWP</label>
-                                                    <p className="font-medium">{data.noNpwp || '-'}</p>
-                                                </div>
-                                                <div>
-                                                    <label className="text-xs text-slate-400">BPJS</label>
-                                                    <p className="font-medium">{data.bpjs || '-'}</p>
-                                                </div>
-                                                <div>
-                                                    <label className="text-xs text-slate-400">Kartu ASN</label>
-                                                    <p className="font-medium">{data.kartuAsn || '-'}</p>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* SK CPNS & PNS */}
-                                    <div className="border rounded-xl overflow-hidden">
-                                        <button
-                                            onClick={() => toggleSection('sk')}
-                                            className="w-full flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 transition-colors"
-                                        >
-                                            <span className="font-semibold text-slate-700 flex items-center gap-2">
-                                                <FileCheck size={18} className="text-indigo-600" />
-                                                SK CPNS & PNS
-                                            </span>
-                                            {expandedSections.sk ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                                        </button>
-                                        {expandedSections.sk && (
-                                            <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                                <div>
-                                                    <label className="text-xs text-slate-400">No. SK CPNS</label>
-                                                    <p className="font-medium">{data.nomorSkCpns || '-'}</p>
-                                                </div>
-                                                <div>
-                                                    <label className="text-xs text-slate-400">Tgl SK CPNS</label>
-                                                    <p className="font-medium">{data.tglSkCpns || '-'}</p>
-                                                </div>
-                                                <div>
-                                                    <label className="text-xs text-slate-400">TMT CPNS</label>
-                                                    <p className="font-medium">{data.tmtCpns || '-'}</p>
-                                                </div>
-                                                <div>
-                                                    <label className="text-xs text-slate-400">No. SK PNS</label>
-                                                    <p className="font-medium">{data.nomorSkPns || '-'}</p>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Instansi & Jabatan */}
-                                    <div className="border rounded-xl overflow-hidden">
-                                        <button
-                                            onClick={() => toggleSection('instansi')}
-                                            className="w-full flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 transition-colors"
-                                        >
-                                            <span className="font-semibold text-slate-700 flex items-center gap-2">
-                                                <Building size={18} className="text-indigo-600" />
-                                                Instansi & Jabatan
-                                            </span>
-                                            {expandedSections.instansi ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                                        </button>
-                                        {expandedSections.instansi && (
-                                            <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                                <div>
-                                                    <label className="text-xs text-slate-400">Instansi Kerja</label>
-                                                    <p className="font-medium">{data.instansiKerjaNama || '-'}</p>
-                                                </div>
-                                                <div>
-                                                    <label className="text-xs text-slate-400">Satuan Kerja</label>
-                                                    <p className="font-medium">{data.satuanKerjaKerjaNama || '-'}</p>
-                                                </div>
-                                                <div>
-                                                    <label className="text-xs text-slate-400">Unit Organisasi</label>
-                                                    <p className="font-medium">{data.unorNama || '-'}</p>
-                                                </div>
-                                                <div>
-                                                    <label className="text-xs text-slate-400">Jabatan</label>
-                                                    <p className="font-medium">{data.jabatanNama || '-'}</p>
-                                                </div>
-                                                <div>
-                                                    <label className="text-xs text-slate-400">Golongan / Pangkat</label>
-                                                    <p className="font-medium">{data.golRuangAkhir || '-'} - {data.pangkatAkhir || '-'}</p>
-                                                </div>
-                                                <div>
-                                                    <label className="text-xs text-slate-400">Eselon</label>
-                                                    <p className="font-medium">{data.eselon || '-'}</p>
-                                                </div>
-                                                <div>
-                                                    <label className="text-xs text-slate-400">TMT Jabatan</label>
-                                                    <p className="font-medium">{data.tmtJabatan || '-'}</p>
-                                                </div>
-                                                <div>
-                                                    <label className="text-xs text-slate-400">TMT Golongan</label>
-                                                    <p className="font-medium">{data.tmtGolAkhir || '-'}</p>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Dokumen Digital Tab */}
-                            {/* Dokumen Digital Tab */}
                             {currentTab === 'dokumen' && (
-                                <div className="space-y-4">
+                                <div className="space-y-6">
+                                    {/* Header dengan tombol refresh */}
                                     <div className="flex justify-between items-center">
-                                        <h3 className="text-lg font-semibold text-slate-800">Dokumen Digital</h3>
+                                        <h3 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                                            <FileText size={20} className="text-indigo-600" />
+                                            Dokumen Digital
+                                        </h3>
                                         <button
                                             onClick={() => loadDokumen(nip)}
                                             disabled={dokumenLoading}
-                                            className="px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-200 disabled:opacity-50"
+                                            className="px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-200 disabled:opacity-50 flex items-center gap-2"
                                         >
-                                            <RefreshCcw size={14} className={`inline mr-1 ${dokumenLoading ? 'animate-spin' : ''}`} />
+                                            <RefreshCcw size={14} className={dokumenLoading ? 'animate-spin' : ''} />
                                             {dokumenLoading ? 'Memuat...' : 'Muat Dokumen'}
                                         </button>
                                     </div>
 
+                                    {/* Dokumen List dengan Accordion */}
                                     {dokumenLoading ? (
-                                        <div className="text-center py-8">
-                                            <RefreshCcw size={32} className="animate-spin mx-auto text-indigo-500" />
-                                            <p className="text-slate-500 mt-2">Memuat dokumen...</p>
+                                        <div className="text-center py-12">
+                                            <Loader2 size={40} className="animate-spin mx-auto text-indigo-500 mb-3" />
+                                            <p className="text-slate-500">Memuat dokumen...</p>
                                         </div>
                                     ) : dokumenList.length === 0 ? (
-                                        <div className="text-center py-8">
-                                            <FileText size={48} className="mx-auto text-slate-300 mb-4" />
+                                        <div className="text-center py-12 bg-slate-50 rounded-xl">
+                                            <FileText size={48} className="mx-auto text-slate-300 mb-3" />
                                             <p className="text-slate-500">Tidak ada dokumen tersedia</p>
                                         </div>
                                     ) : (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            {dokumenList.map((doc, idx) => (
-                                                <div key={idx} className="bg-slate-50 rounded-xl p-4 border border-slate-200 hover:border-indigo-300 transition-all">
-                                                    <div className="flex items-start justify-between">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="p-2 bg-indigo-100 rounded-lg">
-                                                                <FileText size={20} className="text-indigo-600" />
+                                        <div className="space-y-3">
+                                            {dokumenList.map((doc, idx) => {
+                                                const docId = doc.id || doc.object;
+                                                const isExpanded = expandedDocId === docId;
+                                                const isLoading = docPreviewLoading[docId] || false;
+                                                const hasError = docPreviewError[docId] || false;
+                                                const previewUrl = docPreviewUrls[docId];
+
+                                                return (
+                                                    <div key={idx} className="border border-slate-200 rounded-xl overflow-hidden">
+                                                        {/* Header Card */}
+                                                        <div
+                                                            className="flex items-center justify-between p-4 bg-white hover:bg-slate-50 cursor-pointer transition-colors"
+                                                            onClick={() => toggleDocPreview(doc)}
+                                                        >
+                                                            <div className="flex items-center gap-3 flex-1">
+                                                                <div className="p-2 bg-indigo-50 rounded-lg">
+                                                                    <FileText size={20} className="text-indigo-600" />
+                                                                </div>
+                                                                <div className="flex-1">
+                                                                    <p className="font-medium text-slate-800">{doc.nama}</p>
+                                                                    <p className="text-xs text-slate-400 font-mono truncate max-w-md">
+                                                                        {doc.object?.split('/').pop()}
+                                                                    </p>
+                                                                </div>
                                                             </div>
-                                                            <div>
-                                                                <p className="font-medium text-slate-800">{doc.nama}</p>
-                                                                <p className="text-xs text-slate-400 font-mono truncate max-w-[200px]">
-                                                                    {doc.object?.slice(0, 50)}...
-                                                                </p>
+                                                            <div className="flex items-center gap-2">
+                                                                <a
+                                                                    href={bknApiService.downloadDokumen(doc.object, doc.nama)}
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                    className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                                                    title="Download"
+                                                                >
+                                                                    <Download size={18} />
+                                                                </a>
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        toggleDocPreview(doc);
+                                                                    }}
+                                                                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                                    title={isExpanded ? "Tutup" : "Preview"}
+                                                                >
+                                                                    {isExpanded ? <ChevronUp size={18} /> : <Eye size={18} />}
+                                                                </button>
                                                             </div>
                                                         </div>
-                                                        <div className="flex gap-2">
-                                                            <a
-                                                                href={bknApiService.previewDokumen(doc.object)}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                                                title="Preview"
-                                                            >
-                                                                <Eye size={16} />
-                                                            </a>
-                                                            <a
-                                                                href={bknApiService.downloadDokumen(doc.object, doc.nama)}
-                                                                className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                                                                title="Download"
-                                                            >
-                                                                <Download size={16} />
-                                                            </a>
-                                                        </div>
+
+                                                        {/* Preview Panel (Accordion) */}
+                                                        {isExpanded && (
+                                                            <div className="border-t border-slate-200 bg-slate-50 p-4">
+                                                                {isLoading ? (
+                                                                    <div className="flex flex-col items-center justify-center py-12">
+                                                                        <Loader2 size={32} className="animate-spin text-indigo-500 mb-2" />
+                                                                        <p className="text-sm text-slate-500">Memuat preview...</p>
+                                                                    </div>
+                                                                ) : hasError ? (
+                                                                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                                                                        <AlertCircle size={48} className="text-red-500 mb-3" />
+                                                                        <p className="text-slate-600 mb-4">Gagal memuat preview dokumen</p>
+                                                                        <div className="flex gap-3">
+                                                                            <a
+                                                                                href={bknApiService.downloadDokumen(doc.object, doc.nama)}
+                                                                                className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700"
+                                                                            >
+                                                                                <Download size={14} className="inline mr-1" />
+                                                                                Download
+                                                                            </a>
+                                                                            <a
+                                                                                href={bknApiService.previewDokumen(doc.object)}
+                                                                                target="_blank"
+                                                                                rel="noopener noreferrer"
+                                                                                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
+                                                                            >
+                                                                                <ExternalLink size={14} className="inline mr-1" />
+                                                                                Buka Tab Baru
+                                                                            </a>
+                                                                        </div>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div>
+                                                                        <iframe
+                                                                            src={previewUrl}
+                                                                            className="w-full h-[400px] rounded-lg border-0 bg-white shadow-sm"
+                                                                            title={doc.nama}
+                                                                            onLoad={() => {
+                                                                                setDocPreviewLoading(prev => ({ ...prev, [docId]: false }));
+                                                                            }}
+                                                                            onError={() => {
+                                                                                setDocPreviewLoading(prev => ({ ...prev, [docId]: false }));
+                                                                                setDocPreviewError(prev => ({ ...prev, [docId]: true }));
+                                                                            }}
+                                                                        />
+                                                                        <div className="mt-3 flex justify-end gap-2">
+                                                                            <a
+                                                                                href={bknApiService.downloadDokumen(doc.object, doc.nama)}
+                                                                                className="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-xs font-bold hover:bg-green-200"
+                                                                            >
+                                                                                <Download size={12} className="inline mr-1" />
+                                                                                Download
+                                                                            </a>
+                                                                            <a
+                                                                                href={bknApiService.previewDokumen(doc.object)}
+                                                                                target="_blank"
+                                                                                rel="noopener noreferrer"
+                                                                                className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-bold hover:bg-slate-50"
+                                                                            >
+                                                                                <ExternalLink size={12} className="inline mr-1" />
+                                                                                Buka Tab Baru
+                                                                            </a>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                </div>
-                                            ))}
+                                                );
+                                            })}
                                         </div>
                                     )}
                                 </div>
                             )}
 
-                            {/* Riwayat Jabatan Tab */}
-                            {currentTab === 'jabatan' && (
-                                <div className="text-center py-8">
-                                    <Briefcase size={48} className="mx-auto text-slate-300 mb-4" />
-                                    <h3 className="text-lg font-medium text-slate-700">Riwayat Jabatan</h3>
-                                    <p className="text-slate-400 mt-1">Fitur ini akan menampilkan riwayat jabatan pegawai dari BKN</p>
-                                </div>
-                            )}
-
-                            {/* Riwayat Golongan Tab */}
-                            {currentTab === 'golongan' && (
-                                <div className="text-center py-8">
-                                    <TrendingUp size={48} className="mx-auto text-slate-300 mb-4" />
-                                    <h3 className="text-lg font-medium text-slate-700">Riwayat Golongan</h3>
-                                    <p className="text-slate-400 mt-1">Fitur ini akan menampilkan riwayat kenaikan pangkat/golongan</p>
-                                </div>
-                            )}
-
-                            {/* Gaji Berkala Tab */}
-                            {currentTab === 'kgb' && (
-                                <div className="text-center py-8">
-                                    <Wallet size={48} className="mx-auto text-slate-300 mb-4" />
-                                    <h3 className="text-lg font-medium text-slate-700">Kenaikan Gaji Berkala (KGB)</h3>
-                                    <p className="text-slate-400 mt-1">Fitur ini akan menampilkan riwayat kenaikan gaji berkala</p>
-                                </div>
+                            {(currentTab === 'jabatan' || currentTab === 'golongan' || currentTab === 'kgb') && (
+                                <EmptyState
+                                    icon={Database}
+                                    title="Fitur dalam Pengembangan"
+                                    description="Fitur ini akan segera tersedia"
+                                />
                             )}
                         </div>
                     </div>
                 ) : (
-                    <div className="bg-white rounded-2xl p-12 text-center">
-                        <Database size={48} className="mx-auto text-slate-300 mb-4" />
-                        <h3 className="text-lg font-medium text-slate-700">Belum Ada Data</h3>
-                        <p className="text-slate-400 mt-1">
-                            Cari pegawai berdasarkan NIP atau nama untuk melihat data integrasi
-                        </p>
-                    </div>
+                    <EmptyState
+                        icon={Database}
+                        title="Belum Ada Data"
+                        description="Cari pegawai berdasarkan NIP atau nama untuk melihat data integrasi"
+                    />
                 )}
             </div>
 
             <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: scale(0.95); }
-          to { opacity: 1; transform: scale(1); }
-        }
-        .animate-fadeIn {
-          animation: fadeIn 0.2s ease forwards;
-        }
-      `}</style>
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(-10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                .animate-fadeIn {
+                    animation: fadeIn 0.2s ease forwards;
+                }
+            `}</style>
         </div>
     );
 }

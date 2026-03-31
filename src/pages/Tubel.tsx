@@ -7,7 +7,7 @@ import { DataCardTubel } from '../components/cards/DataCardTubel';
 import { DetailModalTubel } from '../components/modals/DetailModalTubel';
 import { ActionModal } from '../components/modals/ActionModal';
 import { UploadModalTubel } from '../components/modals/UploadModalTubel';
-import { LoadingSpinner } from '../components/common/LoadingSpinner';
+import { SkeletonLoading } from '../components/common/SkeletonLoading';
 import { SearchBar } from '../components/common/SearchBar';
 import { tubelService } from '../service/tubelService';
 
@@ -165,7 +165,7 @@ export default function Tubel({ activeTab, onTabChange }: TubelProps) {
 
                 {/* Data Grid */}
                 {loading ? (
-                    <LoadingSpinner />
+                    <SkeletonLoading />
                 ) : error ? (
                     <div className="text-center py-20 bg-white rounded-3xl shadow-sm">
                         <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-6">

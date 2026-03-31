@@ -67,8 +67,8 @@ export const cutiService = {
     getAll: async (perangkatDaerah: string = ""): Promise<CutiData[]> => {
         try {
             const url = perangkatDaerah
-                ? `EndPointAPI/getcuti/${perangkatDaerah}`
-                : 'EndPointAPI/getcuti';
+                ? `api/EndPointAPI/getcuti/${perangkatDaerah}`
+                : 'api/EndPointAPI/getcuti';
 
             const response = await API.get(url);
 

@@ -7,7 +7,7 @@ import { DataCardPangkat } from '../components/cards/DataCardPangkat';
 import { DetailModalPangkat } from '../components/modals/DetailModalPangkat';
 import { ActionModal } from '../components/modals/ActionModal';
 import { UploadModalPangkat } from '../components/modals/UploadModalPangkat';
-import { LoadingSpinner } from '../components/common/LoadingSpinner';
+import { SkeletonLoading } from '../components/common/SkeletonLoading';
 import { SearchBar } from '../components/common/SearchBar';
 import { pangkatService } from '../service/pangkatService';
 
@@ -164,7 +164,7 @@ export default function Pangkat({ activeTab, onTabChange }: PangkatProps) {
 
                 {/* Data Grid */}
                 {loading ? (
-                    <LoadingSpinner />
+                    <SkeletonLoading />
                 ) : error ? (
                     <div className="text-center py-20 bg-white rounded-3xl shadow-sm">
                         <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-6">

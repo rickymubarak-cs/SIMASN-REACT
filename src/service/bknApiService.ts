@@ -1,15 +1,14 @@
 // src/service/bknApiService.ts
 import API from './api';
 
-const BKN_API_BASE = '/EndPointAPI';
+const BKN_API_BASE = '/api/EndPointAPI';
+const BACKEND_URL = 'https://simasn.pontianak.go.id';
 
 export const bknApiService = {
     // Check token status - gunakan endpoint yang sudah ada
     checkTokenStatus: async () => {
         try {
-            console.log('🔍 [checkTokenStatus] Fetching token status...');
             const response = await API.get(`${BKN_API_BASE}/check_status`);
-            console.log('✅ [checkTokenStatus] Response:', response.data);
             return response.data;
         } catch (error) {
             console.error('❌ [checkTokenStatus] Error:', error);
@@ -28,7 +27,6 @@ export const bknApiService = {
     // Get data ASN by NIP
     getDataASN: async (nip: string) => {
         try {
-            console.log('🔍 [getDataASN] Fetching from BKN API for NIP:', nip);
 
             if (!nip || nip.length !== 18) {
                 console.error('❌ [getDataASN] Invalid NIP:', nip);
@@ -36,9 +34,6 @@ export const bknApiService = {
             }
 
             const response = await API.get(`${BKN_API_BASE}/get_data/asn/${nip}`);
-
-            console.log('✅ [getDataASN] Response status:', response.status);
-            console.log('✅ [getDataASN] Response data:', response.data);
 
             return response.data;
         } catch (error: any) {
@@ -50,12 +45,9 @@ export const bknApiService = {
     // Search pegawai
     searchPegawai: async (keyword: string, page: number = 1, limit: number = 10) => {
         try {
-            console.log('🔎 [searchPegawai] Searching for:', keyword);
             const response = await API.get(`${BKN_API_BASE}/search_pegawai`, {
                 params: { q: keyword, page, limit }
             });
-
-            console.log('📦 [searchPegawai] Raw response:', response.data);
 
             if (response.data?.success && Array.isArray(response.data.data)) {
                 const formattedData = response.data.data.map((item: any) => {
@@ -65,7 +57,6 @@ export const bknApiService = {
                     let nip = item.nip || item.peg_nip || '';
 
                     nip = String(nip).trim();
-                    console.log(`📝 Formatting pegawai: ${namaValue} -> NIP: ${nip} (${nip.length} digit)`);
 
                     return {
                         id: item.id || item.peg_id,
@@ -77,8 +68,6 @@ export const bknApiService = {
                         gelar_belakang: item.gelar_belakang || ''
                     };
                 });
-
-                console.log('✅ [searchPegawai] Formatted data:', formattedData);
 
                 return {
                     success: true,
@@ -119,26 +108,39 @@ export const bknApiService = {
     // Get dokumen list
     getDokumenList: async (nip: string) => {
         try {
-            console.log('📄 [getDokumenList] Fetching dokumen for NIP:', nip);
-            const response = await API.get(`${BKN_API_BASE}/get_dokumen_list/${nip}`);
-
-            console.log('✅ [getDokumenList] Response:', response.data);
+            const response = await API.get(`${BKN_API_BASE}/get_dokumen_list/${nip}`, {
+                timeout: 60000 // 60 detik timeout untuk dokumen
+            });
 
             return response.data;
-        } catch (error) {
-            console.error('❌ [getDokumenList] Error:', error);
+        } catch (error: any) {
+            console.error('❌ [getDokumenList] Error:', error.message);
+
+            // Jika timeout, return data kosong dengan pesan
+            if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+                return {
+                    success: false,
+                    message: 'Waktu permintaan habis, dokumen terlalu besar. Coba lagi nanti.',
+                    data: [],
+                    timeout: true
+                };
+            }
+
             return { success: false, message: 'Gagal mengambil daftar dokumen', data: [] };
         }
     },
 
     // Preview dokumen - membuka di tab baru atau modal
     previewDokumen: (object: string) => {
-        return `${BKN_API_BASE}/preview_dokumen/${encodeURIComponent(object)}`;
+        if (!object) return '';
+        // Gunakan URL dengan timeout lebih lama
+        return `${BACKEND_URL}${BKN_API_BASE}/preview_dokumen/${encodeURIComponent(object)}?t=${Date.now()}`;
     },
 
     // Download dokumen
     downloadDokumen: (object: string, nama: string) => {
-        return `${BKN_API_BASE}/download_dokumen/${encodeURIComponent(object)}?nama=${encodeURIComponent(nama)}`;
+        if (!object) return '';
+        return `${BACKEND_URL}${BKN_API_BASE}/download_dokumen/${encodeURIComponent(object)}?nama=${encodeURIComponent(nama)}&t=${Date.now()}`;
     },
 
     // Get riwayat jabatan
