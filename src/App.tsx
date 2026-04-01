@@ -1,4 +1,3 @@
-// src/App.tsx
 import React, { useState } from 'react';
 import PltPlh from './pages/PltPlh';
 import Lpp from './pages/Lpp';

@@ -1,21 +1,22 @@
 import React, { useState } from 'react';
-import { X, Upload, FileCheck, RefreshCcw, User, UserMinus } from 'lucide-react';
+import { X, Upload, FileCheck, RefreshCcw, User, UserMinus, Loader } from 'lucide-react';
 
 interface UploadModalPemberhentianProps {
     isOpen: boolean;
     onClose: () => void;
     onSubmit: (id: string, file: File) => void;
     data: any;
+    isLoading?: boolean;
 }
 
 export const UploadModalPemberhentian: React.FC<UploadModalPemberhentianProps> = ({
     isOpen,
     onClose,
     onSubmit,
-    data
+    data,
+    isLoading = false
 }) => {
     const [uploadFile, setUploadFile] = useState<File | null>(null);
-    const [uploading, setUploading] = useState(false);
 
     if (!isOpen || !data) return null;
 
@@ -36,20 +37,21 @@ export const UploadModalPemberhentian: React.FC<UploadModalPemberhentianProps> =
             return;
         }
 
-        setUploading(true);
         try {
             await onSubmit(data.layanan_pemberhentian_id || data.id, uploadFile);
             setUploadFile(null);
             onClose();
         } catch (err) {
             console.error("Upload error:", err);
-            alert("Gagal upload berkas");
-        } finally {
-            setUploading(false);
+            // Error sudah ditangani di parent component
         }
     };
 
-    const namaLengkap = `${data.peg_gelar_depan || ""} ${data.peg_nama || ""} ${data.peg_gelar_belakang || ""}`.trim();
+    const namaLengkap = [
+        data.peg_gelar_depan || "",
+        data.peg_nama || "",
+        data.peg_gelar_belakang || ""
+    ].filter(Boolean).join(" ").trim();
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -61,7 +63,11 @@ export const UploadModalPemberhentian: React.FC<UploadModalPemberhentianProps> =
                             <Upload size={24} />
                             <h2 className="text-xl font-black">Upload Berkas Hasil Pemberhentian</h2>
                         </div>
-                        <button onClick={onClose} className="p-1 hover:bg-white/20 rounded-lg transition-colors">
+                        <button
+                            onClick={onClose}
+                            disabled={isLoading}
+                            className="p-1 hover:bg-white/20 rounded-lg transition-colors disabled:opacity-50"
+                        >
                             <X size={20} />
                         </button>
                     </div>
@@ -91,8 +97,8 @@ export const UploadModalPemberhentian: React.FC<UploadModalPemberhentianProps> =
                     <div className="mb-6">
                         <label className="block text-xs font-bold text-slate-600 mb-2">Berkas Hasil (PDF)</label>
                         <div
-                            className="border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center hover:border-rose-500 transition-colors cursor-pointer"
-                            onClick={() => document.getElementById('uploadFileInputPemberhentian')?.click()}
+                            className={`border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center hover:border-rose-500 transition-colors cursor-pointer ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            onClick={() => !isLoading && document.getElementById('uploadFileInputPemberhentian')?.click()}
                         >
                             <Upload size={32} className="mx-auto text-slate-400 mb-2" />
                             <p className="text-xs text-slate-500">Klik untuk pilih file PDF</p>
@@ -102,6 +108,7 @@ export const UploadModalPemberhentian: React.FC<UploadModalPemberhentianProps> =
                                 type="file"
                                 accept=".pdf"
                                 className="hidden"
+                                disabled={isLoading}
                                 onChange={(e) => {
                                     if (e.target.files && e.target.files[0]) {
                                         const file = e.target.files[0];
@@ -126,6 +133,7 @@ export const UploadModalPemberhentian: React.FC<UploadModalPemberhentianProps> =
                                     onClick={() => setUploadFile(null)}
                                     className="text-red-500 hover:text-red-700"
                                     type="button"
+                                    disabled={isLoading}
                                 >
                                     <X size={14} />
                                 </button>
@@ -140,17 +148,18 @@ export const UploadModalPemberhentian: React.FC<UploadModalPemberhentianProps> =
                         <button
                             type="button"
                             onClick={onClose}
-                            className="flex-1 px-4 py-2 border border-slate-200 rounded-xl text-sm font-bold hover:bg-slate-50 transition-colors"
+                            disabled={isLoading}
+                            className="flex-1 px-4 py-2 border border-slate-200 rounded-xl text-sm font-bold hover:bg-slate-50 transition-colors disabled:opacity-50"
                         >
                             Batal
                         </button>
                         <button
                             type="submit"
-                            disabled={uploading || !uploadFile}
+                            disabled={isLoading || !uploadFile}
                             className="flex-1 px-4 py-2 bg-rose-500 text-white rounded-xl text-sm font-bold hover:bg-rose-600 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            {uploading ? <RefreshCcw size={14} className="animate-spin" /> : <Upload size={14} />}
-                            {uploading ? "Mengupload..." : "Upload"}
+                            {isLoading ? <Loader size={14} className="animate-spin" /> : <Upload size={14} />}
+                            {isLoading ? "Mengupload..." : "Upload"}
                         </button>
                     </div>
                 </form>

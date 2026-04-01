@@ -1,3 +1,4 @@
+// src/components/common/StatusBadge.tsx
 import React from 'react';
 import {
     Send, CheckCircle, RotateCcw, Ban, FileCheck,
@@ -14,7 +15,8 @@ const layananStatusConfig: Record<string, { icon: any; label: string; color: str
     diterima: { icon: CheckCircle, label: 'Diterima', color: 'green' },
     perbaikan: { icon: RotateCcw, label: 'Perbaikan', color: 'orange' },
     ditolak: { icon: Ban, label: 'Ditolak', color: 'red' },
-    selesai: { icon: FileCheck, label: 'Selesai', color: 'emerald' }
+    selesai: { icon: FileCheck, label: 'Selesai', color: 'emerald' },
+    proses: { icon: RefreshCcw, label: 'Proses', color: 'blue' }
 };
 
 // ============================================
@@ -64,15 +66,15 @@ const colorClasses = {
 
 interface StatusBadgeProps {
     status: string;
-    type?: 'layanan' | 'bkn' | 'token' | 'integration'; // type untuk menentukan konfigurasi yang digunakan
+    type?: 'layanan' | 'bkn' | 'token' | 'integration';
     size?: 'sm' | 'md' | 'lg';
     showIcon?: boolean;
 }
 
 const sizeClasses = {
-    sm: 'px-2 py-1 text-[8px] gap-1',
-    md: 'px-3 py-1.5 text-[10px] gap-1.5',
-    lg: 'px-4 py-2 text-xs gap-2'
+    sm: 'px-2 py-0.5 text-[8px] gap-1',
+    md: 'px-2.5 py-1 text-[10px] gap-1.5',
+    lg: 'px-3 py-1.5 text-xs gap-2'
 };
 
 const iconSizes = {

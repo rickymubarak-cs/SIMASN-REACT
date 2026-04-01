@@ -54,6 +54,24 @@ const BASE_URL_BERKAS = `${BASE_URL}/assets/berkas/Layanan/Pemberhentian/`;
 const BASE_URL_BERKAS_ADMIN = `${BASE_URL}/assets/berkas/layanan_admin/pemberhentian/`;
 const BASE_URL_FOTO = `${BASE_URL}/assets/berkas/profil/`;
 
+// Helper function untuk mendapatkan URL file
+const getFileUrl = (fileName: string, type: 'berkas' | 'admin' | 'foto' = 'berkas'): string | null => {
+    if (!fileName || fileName.trim() === '') return null;
+
+    let baseUrl;
+    if (type === 'admin') {
+        baseUrl = BASE_URL_BERKAS_ADMIN;
+    } else if (type === 'foto') {
+        baseUrl = BASE_URL_FOTO;
+    } else {
+        baseUrl = BASE_URL_BERKAS;
+    }
+
+    const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+    const cleanFileName = fileName.startsWith('/') ? fileName.substring(1) : fileName;
+    return `${cleanBaseUrl}${cleanFileName}`;
+};
+
 // Konfigurasi file untuk Pemberhentian ASN
 export const pemberhentianFileConfig = [
     { key: 'file_form_permintaan', label: 'Form Permintaan Pemberhentian', icon: 'FileSignature', color: 'blue' },
@@ -87,55 +105,66 @@ export const pemberhentianFileConfig = [
     { key: 'file_pengantar', label: 'Surat Pengantar', icon: 'Mail', color: 'green' }
 ];
 
+// Retry logic helper
+const fetchWithRetry = async <T,>(
+    fn: () => Promise<T>,
+    retries: number = 3,
+    delay: number = 1000
+): Promise<T> => {
+    for (let i = 0; i < retries; i++) {
+        try {
+            return await fn();
+        } catch (err) {
+            if (i === retries - 1) throw err;
+            await new Promise(resolve => setTimeout(resolve, delay * (i + 1)));
+        }
+    }
+    throw new Error('Max retries exceeded');
+};
+
 export const pemberhentianService = {
     // Get all Pemberhentian ASN data
     getAll: async (perangkatDaerah: string = ""): Promise<PemberhentianData[]> => {
-        try {
-            const url = perangkatDaerah
-                ? `api/EndPointAPI/getpemberhentian/${perangkatDaerah}`
-                : 'api/EndPointAPI/getpemberhentian';
+        return fetchWithRetry(async () => {
+            try {
+                // Fixed: API endpoint yang konsisten
+                const url = perangkatDaerah
+                    ? `api/EndPointAPI/getpemberhentian/${encodeURIComponent(perangkatDaerah)}`
+                    : 'api/EndPointAPI/getpemberhentian';
 
-            const response = await API.get(url);
-            console.log('Pemberhentian API Response:', response.data);
+                console.log('Fetching Pemberhentian data from:', url);
+                const response = await API.get(url);
+                console.log('Pemberhentian API Response:', response.data);
 
-            if (response.data?.status && response.data?.data) {
-                const pemberhentianData = response.data.data.pemberhentian;
+                if (response.data?.status && response.data?.data) {
+                    const pemberhentianData = response.data.data.pemberhentian;
 
-                if (Array.isArray(pemberhentianData)) {
-                    // Proses data untuk menambahkan URL file yang benar
-                    return pemberhentianData.map((item: any) => {
-                        const processedItem: any = { ...item };
+                    if (Array.isArray(pemberhentianData)) {
+                        // Proses data untuk menambahkan URL file yang benar
+                        return pemberhentianData.map((item: any) => {
+                            const processedItem: any = { ...item };
 
-                        // Tambahkan URL untuk setiap file yang ada
-                        pemberhentianFileConfig.forEach(fileConfig => {
-                            const fileValue = item[fileConfig.key];
-                            if (fileValue && fileValue.trim() !== '') {
-                                processedItem[`${fileConfig.key}_url`] = `${BASE_URL_BERKAS}${fileValue}`;
-                            } else {
-                                processedItem[`${fileConfig.key}_url`] = null;
-                            }
+                            // Tambahkan URL untuk setiap file yang ada
+                            pemberhentianFileConfig.forEach(fileConfig => {
+                                const fileValue = item[fileConfig.key];
+                                processedItem[`${fileConfig.key}_url`] = getFileUrl(fileValue, 'berkas');
+                            });
+
+                            // URL untuk berkas hasil (admin)
+                            processedItem.file_status_pelayanan_url = getFileUrl(item.file_status_pelayanan, 'admin');
+                            processedItem.foto_url = getFileUrl(item.foto, 'foto'); // 👈 Gunakan type 'foto'
+
+                            return processedItem;
                         });
-
-                        // URL untuk berkas hasil
-                        processedItem.file_status_pelayanan_url = item.file_status_pelayanan
-                            ? `${BASE_URL_BERKAS_ADMIN}${item.file_status_pelayanan}`
-                            : null;
-
-                        // URL untuk foto
-                        processedItem.foto_url = item.foto
-                            ? `${BASE_URL_FOTO}${item.foto}`
-                            : null;
-
-                        return processedItem;
-                    });
+                    }
                 }
-            }
 
-            return [];
-        } catch (error) {
-            console.error('Error fetching Pemberhentian data:', error);
-            throw error;
-        }
+                return [];
+            } catch (error) {
+                console.error('Error fetching Pemberhentian data:', error);
+                throw error;
+            }
+        }, 2, 1000); // 2 retries with 1 second delay
     },
 
     // Update status (terima, tolak, perbaiki)
@@ -146,11 +175,11 @@ export const pemberhentianService = {
             let data = null;
 
             if (status === 'diterima') {
-                endpoint = `layanan_admin/pemberhentianStatus?terima=${id}`;
+                endpoint = `layanan_admin/pemberhentianStatus?terima=${encodeURIComponent(id)}`;
             } else if (status === 'selesai') {
-                endpoint = `layanan_admin/pemberhentianStatus?terima_tembusan=${id}`;
+                endpoint = `layanan_admin/pemberhentianStatus?terima_tembusan=${encodeURIComponent(id)}`;
             } else if (status === 'ditolak') {
-                endpoint = `layanan_admin/pemberhentianStatus?tolak=${id}`;
+                endpoint = `layanan_admin/pemberhentianStatus?tolak=${encodeURIComponent(id)}`;
             } else if (status === 'perbaikan') {
                 endpoint = 'layanan_admin/statuspemberhentianPerbaiki';
                 method = 'post';
@@ -160,6 +189,8 @@ export const pemberhentianService = {
                     formData.append('keterangan', keterangan);
                 }
                 data = formData;
+            } else {
+                throw new Error(`Unknown status: ${status}`);
             }
 
             let response;
@@ -186,7 +217,8 @@ export const pemberhentianService = {
             formData.append('layanan_pemberhentian_id', id);
 
             const response = await API.post('layanan_admin/berkasLayananPemberhentian', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
+                headers: { 'Content-Type': 'multipart/form-data' },
+                timeout: 30000 // 30 seconds timeout for file upload
             });
 
             return response.data;
@@ -205,7 +237,8 @@ export const pemberhentianService = {
             formData.append('old_file_status_pelayanan', oldFile);
 
             const response = await API.post('layanan_admin/ubahberkasLayananPemberhentian', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
+                headers: { 'Content-Type': 'multipart/form-data' },
+                timeout: 30000
             });
 
             return response.data;
@@ -218,9 +251,21 @@ export const pemberhentianService = {
     // Get detail by ID
     getById: async (id: string): Promise<PemberhentianData | null> => {
         try {
-            const response = await API.get(`EndPointAPI/getpemberhentianbyid/${id}`);
+            const response = await API.get(`api/EndPointAPI/getpemberhentianbyid/${encodeURIComponent(id)}`);
             if (response.data?.status && response.data?.data) {
-                return response.data.data;
+                const item = response.data.data;
+                const processedItem: any = { ...item };
+
+                // Proses URLs untuk detail
+                pemberhentianFileConfig.forEach(fileConfig => {
+                    const fileValue = item[fileConfig.key];
+                    processedItem[`${fileConfig.key}_url`] = getFileUrl(fileValue, false);
+                });
+
+                processedItem.file_status_pelayanan_url = getFileUrl(item.file_status_pelayanan, true);
+                processedItem.foto_url = getFileUrl(item.foto, false);
+
+                return processedItem;
             }
             return null;
         } catch (error) {

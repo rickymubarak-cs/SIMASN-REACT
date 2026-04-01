@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Edit, Ban, Send, X, User } from 'lucide-react';
+import { Edit, Ban, Send, X, User, Loader } from 'lucide-react';
 
 interface ActionModalProps {
     isOpen: boolean;
@@ -8,6 +8,7 @@ interface ActionModalProps {
     title: string;
     actionType: 'perbaiki' | 'tolak';
     data: any;
+    isLoading?: boolean;
 }
 
 export const ActionModal: React.FC<ActionModalProps> = ({
@@ -16,7 +17,8 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     onSubmit,
     title,
     actionType,
-    data
+    data,
+    isLoading = false
 }) => {
     const [reason, setReason] = useState("");
 
@@ -25,8 +27,8 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (reason.trim()) {
-            // Gunakan ID yang sesuai berdasarkan tipe data
-            const id = data.layanan_pltplh_id || data.layanan_lpp_id || data.id;
+            // FIXED: Gunakan ID yang sesuai untuk Pemberhentian
+            const id = data.layanan_pemberhentian_id || data.id;
             onSubmit(id, reason);
             setReason("");
             onClose();
@@ -51,7 +53,11 @@ export const ActionModal: React.FC<ActionModalProps> = ({
 
     const IconComponent = actionType === 'perbaiki' ? Edit : Ban;
 
-    const namaLengkap = `${data.peg_gelar_depan || ""} ${data.peg_nama || ""} ${data.peg_gelar_belakang || ""}`.trim();
+    const namaLengkap = [
+        data.peg_gelar_depan || "",
+        data.peg_nama || "",
+        data.peg_gelar_belakang || ""
+    ].filter(Boolean).join(" ").trim();
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -63,7 +69,11 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                             <IconComponent size={24} />
                             <h2 className="text-xl font-black">{title}</h2>
                         </div>
-                        <button onClick={onClose} className="p-1 hover:bg-white/20 rounded-lg transition-colors">
+                        <button
+                            onClick={onClose}
+                            disabled={isLoading}
+                            className="p-1 hover:bg-white/20 rounded-lg transition-colors disabled:opacity-50"
+                        >
                             <X size={20} />
                         </button>
                     </div>
@@ -89,6 +99,7 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                             rows={4}
                             placeholder={placeholder}
                             required
+                            disabled={isLoading}
                         />
                         <p className="text-[10px] text-slate-400 mt-1">
                             {actionType === 'perbaiki'
@@ -101,16 +112,18 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                         <button
                             type="button"
                             onClick={onClose}
-                            className="flex-1 px-4 py-2 border border-slate-200 rounded-xl text-sm font-bold hover:bg-slate-50 transition-colors"
+                            disabled={isLoading}
+                            className="flex-1 px-4 py-2 border border-slate-200 rounded-xl text-sm font-bold hover:bg-slate-50 transition-colors disabled:opacity-50"
                         >
                             Batal
                         </button>
                         <button
                             type="submit"
-                            className={`flex-1 px-4 py-2 text-white rounded-xl text-sm font-bold ${buttonClass} transition-all flex items-center justify-center gap-2`}
+                            disabled={isLoading || !reason.trim()}
+                            className={`flex-1 px-4 py-2 text-white rounded-xl text-sm font-bold ${buttonClass} transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed`}
                         >
-                            <Send size={14} />
-                            Kirim
+                            {isLoading ? <Loader size={14} className="animate-spin" /> : <Send size={14} />}
+                            {isLoading ? "Mengirim..." : "Kirim"}
                         </button>
                     </div>
                 </form>

@@ -13,6 +13,7 @@ interface SearchBarProps {
     perangkatDaerah?: string;
     onPerangkatDaerahChange?: (value: string) => void;
     showUnitFilter?: boolean;
+    onFilter?: () => void;
 
     // Props untuk hasil pencarian (dropdown)
     results?: SearchResult[];
@@ -35,6 +36,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     perangkatDaerah = '',
     onPerangkatDaerahChange,
     showUnitFilter = false,
+    onFilter,
     results = [],
     showResults = false,
     totalResults = 0,
@@ -120,6 +122,18 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                     {loading ? <RefreshCcw size={18} className="animate-spin" /> : <Search size={18} />}
                     {buttonText}
                 </button>
+
+                {/* Filter Button (Optional) */}
+                {onFilter && (
+                    <button
+                        onClick={onFilter}
+                        disabled={loading}
+                        className="px-6 py-3 bg-slate-100 text-slate-700 rounded-xl font-medium transition-all hover:bg-slate-200 disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                        <RefreshCcw size={18} className={loading ? 'animate-spin' : ''} />
+                        Filter
+                    </button>
+                )}
             </div>
 
             {/* Search Results Dropdown */}
@@ -176,3 +190,5 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         </div>
     );
 };
+
+export default SearchBar;
