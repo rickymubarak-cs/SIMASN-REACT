@@ -1,7 +1,8 @@
+// src/components/modals/DetailModalTubel.tsx
 import React, { useState } from 'react';
 import {
     X, User, Building, Paperclip, FileCheck, Clock, Info, GraduationCap, ChevronDown, ChevronUp,
-    Mail, FileSignature, Wallet, Gavel, Eye, ExternalLink
+    Mail, FileSignature, FileText, FileCertificate, Briefcase, IdCard, Eye, ExternalLink, Calendar, MapPin
 } from 'lucide-react';
 import { StatusBadge } from '../common/StatusBadge';
 import { formatDateTimeId, getInitials } from '../../utils/formatters';
@@ -18,26 +19,32 @@ const BASE_URL_BERKAS = "https://simasn.pontianak.go.id/assets/berkas/Layanan/Tu
 
 // Map icon untuk file
 const fileIconMap: Record<string, any> = {
-    FileCheck: FileCheck,
-    Gavel: Gavel,
-    FileText: FileCheck,
-    Wallet: Wallet,
+    Mail: Mail,
     FileSignature: FileSignature,
-    Mail: Mail
+    FileText: FileText,
+    FileCertificate: FileCheck,
+    FileCheck: FileCheck,
+    GraduationCap: GraduationCap,
+    Briefcase: Briefcase,
+    IdCard: IdCard,
+    Gavel: FileText,
+    Wallet: FileText,
+    Award: GraduationCap
 };
 
 // Map warna untuk badge
 const colorMap: Record<string, string> = {
-    blue: 'bg-blue-50 text-blue-600 border-blue-200',
-    cyan: 'bg-cyan-50 text-cyan-600 border-cyan-200',
-    orange: 'bg-orange-50 text-orange-600 border-orange-200',
-    purple: 'bg-purple-50 text-purple-600 border-purple-200',
     green: 'bg-green-50 text-green-600 border-green-200',
+    blue: 'bg-blue-50 text-blue-600 border-blue-200',
+    purple: 'bg-purple-50 text-purple-600 border-purple-200',
     indigo: 'bg-indigo-50 text-indigo-600 border-indigo-200',
-    pink: 'bg-pink-50 text-pink-600 border-pink-200',
+    orange: 'bg-orange-50 text-orange-600 border-orange-200',
     amber: 'bg-amber-50 text-amber-600 border-amber-200',
-    red: 'bg-red-50 text-red-600 border-red-200',
+    cyan: 'bg-cyan-50 text-cyan-600 border-cyan-200',
     teal: 'bg-teal-50 text-teal-600 border-teal-200',
+    rose: 'bg-rose-50 text-rose-600 border-rose-200',
+    pink: 'bg-pink-50 text-pink-600 border-pink-200',
+    red: 'bg-red-50 text-red-600 border-red-200',
     gray: 'bg-gray-50 text-gray-600 border-gray-200'
 };
 
@@ -59,8 +66,7 @@ export const DetailModalTubel: React.FC<DetailModalTubelProps> = ({
     const namaLengkap = `${data.peg_gelar_depan || ""} ${data.peg_nama || ""} ${data.peg_gelar_belakang || ""}`.trim();
     const initials = getInitials(namaLengkap);
     const status = data.layanan_tubel_status || "pengajuan";
-    const statusPNS = data.layanan_tubel_status_pns || "-";
-    const usia = data.layanan_tubel_usia || "-";
+    const usiaUsulan = data.layanan_tubel_usia || 0;
 
     // Filter file yang tersedia
     const availableFiles = tubelFileConfig
@@ -68,11 +74,20 @@ export const DetailModalTubel: React.FC<DetailModalTubelProps> = ({
         .map(fileConfig => ({
             ...fileConfig,
             url: data[`${fileConfig.key}_url`] || `${BASE_URL_BERKAS}${data[fileConfig.key]}`,
-            icon: fileIconMap[fileConfig.icon] || FileCheck
+            icon: fileIconMap[fileConfig.icon] || FileText
         }));
 
     const visibleFiles = showAllFiles ? availableFiles : availableFiles.slice(0, 6);
     const hasMoreFiles = availableFiles.length > 6;
+
+    const getJenisTubelText = () => {
+        if (data.layanan_tubel_status_pns === "dalam_negeri") {
+            return "Dalam Negeri";
+        } else if (data.layanan_tubel_status_pns === "luar_negeri") {
+            return "Luar Negeri";
+        }
+        return "-";
+    };
 
     const handlePreview = (url: string, title: string) => {
         setPreviewState({ isOpen: true, url, title });
@@ -153,15 +168,15 @@ export const DetailModalTubel: React.FC<DetailModalTubelProps> = ({
                 <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
                 <div className="relative bg-white rounded-3xl max-w-5xl w-full max-h-[90vh] overflow-y-auto shadow-2xl animate-fadeIn">
                     {/* Header */}
-                    <div className="sticky top-0 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white p-6 rounded-t-3xl">
+                    <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-3xl">
                         <div className="flex justify-between items-start">
                             <div>
                                 <h2 className="text-xl font-black flex items-center gap-2">
                                     <GraduationCap size={24} />
-                                    Detail Tugas Belajar
+                                    Detail Tugas Belajar (TUBEL)
                                 </h2>
-                                <p className="text-emerald-100 text-xs mt-1">
-                                    Informasi lengkap pengajuan izin tugas belajar pegawai
+                                <p className="text-blue-100 text-xs mt-1">
+                                    Informasi lengkap pengajuan usulan Tugas Belajar
                                 </p>
                             </div>
                             <button onClick={onClose} className="p-2 hover:bg-white/20 rounded-xl"><X size={20} /></button>
@@ -179,20 +194,20 @@ export const DetailModalTubel: React.FC<DetailModalTubelProps> = ({
                                         <img
                                             src={fotoUrl}
                                             alt={namaLengkap}
-                                            className="w-32 h-32 rounded-full object-cover mx-auto border-4 border-emerald-200 shadow-lg"
+                                            className="w-32 h-32 rounded-full object-cover mx-auto border-4 border-blue-200 shadow-lg"
                                             onError={(e) => {
                                                 e.currentTarget.style.display = "none";
                                                 const parent = e.currentTarget.parentElement;
                                                 if (parent) {
                                                     const fallback = document.createElement('div');
-                                                    fallback.className = "w-32 h-32 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 text-white flex items-center justify-center text-5xl font-black mx-auto border-4 border-emerald-200 shadow-lg";
+                                                    fallback.className = "w-32 h-32 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white flex items-center justify-center text-5xl font-black mx-auto border-4 border-blue-200 shadow-lg";
                                                     fallback.textContent = initials;
                                                     parent.appendChild(fallback);
                                                 }
                                             }}
                                         />
                                     ) : (
-                                        <div className="w-32 h-32 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 text-white flex items-center justify-center text-5xl font-black mx-auto border-4 border-emerald-200 shadow-lg">
+                                        <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white flex items-center justify-center text-5xl font-black mx-auto border-4 border-blue-200 shadow-lg">
                                             {initials}
                                         </div>
                                     )}
@@ -213,17 +228,17 @@ export const DetailModalTubel: React.FC<DetailModalTubelProps> = ({
                                             </p>
                                         </div>
                                         <div>
-                                            <p className="text-[10px] text-slate-400">Status PNS</p>
-                                            <p className="font-medium text-slate-700 text-sm">{statusPNS}</p>
+                                            <p className="text-[10px] text-slate-400">Usia Usulan</p>
+                                            <p className="font-medium text-slate-700 text-sm">{usiaUsulan} tahun</p>
                                         </div>
                                         <div>
-                                            <p className="text-[10px] text-slate-400">Usia</p>
-                                            <p className="font-medium text-slate-700 text-sm">{usia} tahun</p>
+                                            <p className="text-[10px] text-slate-400">Jenis Tugas Belajar</p>
+                                            <p className="font-medium text-slate-700 text-sm">{getJenisTubelText()}</p>
                                         </div>
                                         <div>
                                             <p className="text-[10px] text-slate-400">Tanggal Pengajuan</p>
                                             <p className="font-medium text-slate-700 text-sm">
-                                                {formatDateTimeId(data.timestamp || data.tgl_usul)}
+                                                {formatDateTimeId(data.layanan_tgl || data.timestamp)}
                                             </p>
                                         </div>
                                     </div>
@@ -238,7 +253,9 @@ export const DetailModalTubel: React.FC<DetailModalTubelProps> = ({
                                     {data.keterangan && (
                                         <div className="mt-3 pt-3 border-t border-slate-200">
                                             <p className="text-[10px] text-slate-400">Keterangan Admin</p>
-                                            <p className="text-xs text-slate-600 mt-1">{data.keterangan}</p>
+                                            <p className="text-xs text-slate-600 whitespace-pre-wrap mt-1 max-h-40 overflow-y-auto">
+                                                {data.keterangan}
+                                            </p>
                                         </div>
                                     )}
                                 </div>
@@ -258,10 +275,10 @@ export const DetailModalTubel: React.FC<DetailModalTubelProps> = ({
                                 <div className="grid grid-cols-1 gap-3">
                                     {visibleFiles.map((file) => {
                                         const IconComponent = file.icon;
-                                        const colorClass = colorMap[file.color] || colorMap.gray;
+                                        const colorClass = colorMap[file.color] || colorMap.blue;
 
                                         return (
-                                            <div key={file.key} className="bg-slate-50 rounded-xl p-3 border border-slate-100 hover:border-emerald-200 transition-all">
+                                            <div key={file.key} className="bg-slate-50 rounded-xl p-3 border border-slate-100 hover:border-blue-200 transition-all">
                                                 <div className="flex items-start gap-3">
                                                     <div className={`p-2 rounded-lg ${colorClass}`}>
                                                         <IconComponent size={16} />
@@ -275,13 +292,13 @@ export const DetailModalTubel: React.FC<DetailModalTubelProps> = ({
                                                             <div className="flex gap-1">
                                                                 <button
                                                                     onClick={() => window.open(file.url, '_blank')}
-                                                                    className="px-2 py-1 rounded-lg bg-white border border-slate-200 text-slate-600 hover:border-emerald-400 hover:text-emerald-600 transition-all text-[10px] font-medium"
+                                                                    className="px-2 py-1 rounded-lg bg-white border border-slate-200 text-slate-600 hover:border-blue-400 hover:text-blue-600 transition-all text-[10px] font-medium"
                                                                 >
                                                                     <ExternalLink size={10} className="inline mr-1" /> Buka
                                                                 </button>
                                                                 <button
                                                                     onClick={() => handlePreview(file.url, file.label)}
-                                                                    className="px-2 py-1 rounded-lg bg-white border border-slate-200 text-slate-600 hover:border-emerald-400 hover:text-emerald-600 transition-all text-[10px] font-medium"
+                                                                    className="px-2 py-1 rounded-lg bg-white border border-slate-200 text-slate-600 hover:border-blue-400 hover:text-blue-600 transition-all text-[10px] font-medium"
                                                                 >
                                                                     <Eye size={10} className="inline mr-1" /> Preview
                                                                 </button>
@@ -298,7 +315,7 @@ export const DetailModalTubel: React.FC<DetailModalTubelProps> = ({
                                 {hasMoreFiles && (
                                     <button
                                         onClick={() => setShowAllFiles(!showAllFiles)}
-                                        className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2 text-xs font-medium text-emerald-600 bg-emerald-50 rounded-xl hover:bg-emerald-100 transition-colors"
+                                        className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2 text-xs font-medium text-blue-600 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors"
                                     >
                                         {showAllFiles ? (
                                             <>
@@ -318,27 +335,27 @@ export const DetailModalTubel: React.FC<DetailModalTubelProps> = ({
                                 {data.file_status_pelayanan && (
                                     <div className="mt-6">
                                         <h4 className="text-sm font-black text-slate-800 flex items-center gap-2 mb-3">
-                                            <FileCheck size={16} className="text-emerald-600" /> Berkas Hasil
+                                            <FileCheck size={16} className="text-blue-600" /> Berkas Hasil
                                         </h4>
-                                        <div className="bg-emerald-50 rounded-xl p-3 border border-emerald-200">
+                                        <div className="bg-blue-50 rounded-xl p-3 border border-blue-200">
                                             <div className="flex items-start gap-3">
-                                                <div className="p-2 rounded-lg bg-emerald-100 text-emerald-700">
+                                                <div className="p-2 rounded-lg bg-blue-100 text-blue-700">
                                                     <FileCheck size={16} />
                                                 </div>
                                                 <div className="flex-1">
-                                                    <p className="text-xs font-semibold text-slate-700">SK / Surat Keputusan</p>
+                                                    <p className="text-xs font-semibold text-slate-700">SK / Keputusan Tugas Belajar</p>
                                                     <p className="text-[10px] text-slate-400 font-mono mt-0.5">{data.file_status_pelayanan}</p>
                                                 </div>
                                                 <div className="flex gap-1">
                                                     <button
                                                         onClick={() => window.open(data.file_status_pelayanan_url, '_blank')}
-                                                        className="px-2 py-1 rounded-lg bg-white border border-slate-200 text-slate-600 hover:border-emerald-400 hover:text-emerald-600 transition-all text-[10px] font-medium"
+                                                        className="px-2 py-1 rounded-lg bg-white border border-slate-200 text-slate-600 hover:border-blue-400 hover:text-blue-600 transition-all text-[10px] font-medium"
                                                     >
                                                         <ExternalLink size={10} className="inline mr-1" /> Buka
                                                     </button>
                                                     <button
-                                                        onClick={() => handlePreview(data.file_status_pelayanan_url, 'SK / Surat Keputusan')}
-                                                        className="px-2 py-1 rounded-lg bg-white border border-slate-200 text-slate-600 hover:border-emerald-400 hover:text-emerald-600 transition-all text-[10px] font-medium"
+                                                        onClick={() => handlePreview(data.file_status_pelayanan_url, 'SK / Keputusan Tugas Belajar')}
+                                                        className="px-2 py-1 rounded-lg bg-white border border-slate-200 text-slate-600 hover:border-blue-400 hover:text-blue-600 transition-all text-[10px] font-medium"
                                                     >
                                                         <Eye size={10} className="inline mr-1" /> Preview
                                                     </button>

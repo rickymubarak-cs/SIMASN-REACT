@@ -1,4 +1,3 @@
-// src/components/layout/DashboardSearchBar.tsx
 import React from 'react';
 import {
     Database, MapPin, RefreshCcw, Clock, FileText, Users,
@@ -151,6 +150,17 @@ export const DashboardSearchBar: React.FC<DashboardSearchBarProps> = ({
             viewModeActive: 'bg-amber-500 text-white shadow-sm',
             viewModeInactive: 'text-white/80 hover:text-white hover:bg-white/20',
             inputBg: 'bg-white',
+            inputText: 'text-slate-900',
+            inputPlaceholder: 'placeholder:text-slate-400',
+            inputBorderColor: 'border-slate-200'
+        },
+        tubel: {
+            button: 'bg-blue-600 hover:bg-blue-700 text-white',
+            inputBorder: 'focus:ring-blue-500/5',
+            resultHover: 'hover:bg-blue-50',
+            viewModeActive: 'bg-blue-600 text-white shadow-sm',  // Warna biru untuk active
+            viewModeInactive: 'text-slate-400 hover:text-slate-700 hover:bg-white/50',
+            inputBg: 'bg-slate-50',
             inputText: 'text-slate-900',
             inputPlaceholder: 'placeholder:text-slate-400',
             inputBorderColor: 'border-slate-200'

@@ -1,3 +1,4 @@
+// src/components/modals/ActionModal.tsx
 import React, { useState } from 'react';
 import { Edit, Ban, Send, X, User, Loader } from 'lucide-react';
 
@@ -27,8 +28,8 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (reason.trim()) {
-            // FIXED: Gunakan ID yang sesuai untuk Pemberhentian
-            const id = data.layanan_pemberhentian_id || data.id;
+            // Gunakan ID yang sesuai (untuk TUBEL: layanan_tubel_id, untuk SLKS: slks_id)
+            const id = data.layanan_tubel_id || data.slks_id || data.id;
             onSubmit(id, reason);
             setReason("");
             onClose();

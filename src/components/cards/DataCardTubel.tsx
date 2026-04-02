@@ -1,5 +1,6 @@
+// src/components/cards/DataCardTubel.tsx
 import React from 'react';
-import { User, Clock, Eye, Edit, Ban, CheckCircle, Upload, GraduationCap, FileCheck } from 'lucide-react';
+import { GraduationCap, Clock, Eye, Edit, Ban, CheckCircle, Upload, FileCheck, Building } from 'lucide-react';
 import { StatusBadge } from '../common/StatusBadge';
 import { formatDateTimeId } from '../../utils/formatters';
 import { tubelFileConfig } from '../../service/tubelService';
@@ -25,30 +26,40 @@ export const DataCardTubel: React.FC<DataCardTubelProps> = ({
 }) => {
     const status = data.layanan_tubel_status || "pengajuan";
     const namaLengkap = `${data.peg_gelar_depan || ""} ${data.peg_nama || ""} ${data.peg_gelar_belakang || ""}`.trim();
-    const statusPNS = data.layanan_tubel_status_pns || "";
-    const usia = data.layanan_tubel_usia || "";
+    const unitKerja = data.unit_org_induk_nm || "-";
+    const usiaUsulan = data.layanan_tubel_usia || 0;
 
     // Hitung jumlah file yang tersedia
     const availableFiles = tubelFileConfig.filter(
         fileConfig => data[fileConfig.key] && data[fileConfig.key].trim() !== ""
     ).length;
 
+    // Tentukan badge untuk jenis Tugas Belajar
+    const getJenisTubelBadge = () => {
+        if (data.layanan_tubel_status_pns === "dalam_negeri") {
+            return <span className="text-[9px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Dalam Negeri</span>;
+        } else if (data.layanan_tubel_status_pns === "luar_negeri") {
+            return <span className="text-[9px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">Luar Negeri</span>;
+        }
+        return null;
+    };
+
     return (
         <div className="bg-white rounded-[3rem] border border-slate-200/60 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all group flex flex-col overflow-hidden relative">
             <div className="p-6 flex-1">
                 <div className="flex justify-between items-start mb-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-2xl flex items-center justify-center group-hover:scale-110 transition-all duration-500 shadow-lg shadow-emerald-200">
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-2xl flex items-center justify-center group-hover:scale-110 transition-all duration-500 shadow-lg shadow-blue-200">
                         <GraduationCap size={20} />
                     </div>
                     <div className="flex flex-col items-end gap-1">
-                        <span className="text-[9px] font-black text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full uppercase">
+                        <span className="text-[9px] font-black text-blue-600 bg-blue-50 px-3 py-1.5 rounded-full uppercase">
                             #{index}
                         </span>
                         <StatusBadge status={status} />
                     </div>
                 </div>
 
-                <h3 className="font-black text-slate-800 text-sm leading-tight mb-1 line-clamp-2 uppercase group-hover:text-emerald-600 transition-colors">
+                <h3 className="font-black text-slate-800 text-sm leading-tight mb-1 line-clamp-2 uppercase group-hover:text-blue-600 transition-colors">
                     {namaLengkap || "Tanpa Nama"}
                 </h3>
 
@@ -56,18 +67,27 @@ export const DataCardTubel: React.FC<DataCardTubelProps> = ({
                     NIP. {data.peg_nip || "-"}
                 </p>
 
+                {/* Unit Kerja */}
+                <div className="mb-3">
+                    <div className="flex items-start gap-1.5">
+                        <Building size={10} className="text-blue-400 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                            <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">
+                                Unit Kerja
+                            </p>
+                            <p className="text-[10px] font-medium text-slate-700 leading-tight line-clamp-2" title={unitKerja}>
+                                {unitKerja}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
                 <div className="flex flex-wrap gap-1 mb-2">
-                    {statusPNS && (
-                        <span className="text-[9px] text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
-                            <User size={10} />
-                            {statusPNS}
-                        </span>
-                    )}
-                    {usia && usia !== "0" && (
-                        <span className="text-[9px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
-                            Usia: {usia} tahun
-                        </span>
-                    )}
+                    <span className="text-[9px] text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                        <GraduationCap size={10} />
+                        Usia Usulan: {usiaUsulan} tahun
+                    </span>
+                    {getJenisTubelBadge()}
                 </div>
 
                 <p className="text-[9px] text-slate-500 bg-slate-50 px-2 py-1 rounded-full inline-flex items-center gap-1 mb-3">
@@ -77,7 +97,7 @@ export const DataCardTubel: React.FC<DataCardTubelProps> = ({
 
                 <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-100 text-[9px] font-black text-slate-400 uppercase">
                     <Clock size={10} />
-                    <span>{formatDateTimeId(data.timestamp || data.tgl_usul)}</span>
+                    <span>{formatDateTimeId(data.layanan_tgl || data.timestamp)}</span>
                 </div>
             </div>
 
@@ -86,7 +106,7 @@ export const DataCardTubel: React.FC<DataCardTubelProps> = ({
                 <div className="flex gap-1.5 flex-wrap">
                     <button
                         onClick={onDetail}
-                        className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl text-[9px] font-bold bg-white border border-emerald-200 text-emerald-600 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 transition-all"
+                        className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl text-[9px] font-bold bg-white border border-blue-200 text-blue-600 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all"
                     >
                         <Eye size={12} /> Detail
                     </button>
@@ -126,11 +146,11 @@ export const DataCardTubel: React.FC<DataCardTubelProps> = ({
                     )}
                 </div>
 
-                {/* File indicators - tampilkan 4 file pertama */}
+                {/* File indicators */}
                 <div className="flex gap-1 pt-1 flex-wrap">
                     {tubelFileConfig.slice(0, 4).map(fileConfig => (
                         data[fileConfig.key] && data[fileConfig.key].trim() !== "" && (
-                            <span key={fileConfig.key} className="text-[8px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">
+                            <span key={fileConfig.key} className="text-[8px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-600">
                                 ✓ {fileConfig.label.slice(0, 12)}
                             </span>
                         )

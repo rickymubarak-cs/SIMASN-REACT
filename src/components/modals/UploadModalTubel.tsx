@@ -1,5 +1,6 @@
+// src/components/modals/UploadModalTubel.tsx
 import React, { useState } from 'react';
-import { X, Upload, FileCheck, RefreshCcw, User, GraduationCap } from 'lucide-react';
+import { X, Upload, FileCheck, RefreshCcw, User, GraduationCap, Building, AlertCircle } from 'lucide-react';
 
 interface UploadModalTubelProps {
     isOpen: boolean;
@@ -16,23 +17,26 @@ export const UploadModalTubel: React.FC<UploadModalTubelProps> = ({
 }) => {
     const [uploadFile, setUploadFile] = useState<File | null>(null);
     const [uploading, setUploading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     if (!isOpen || !data) return null;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setError(null);
+        
         if (!uploadFile) {
-            alert("Pilih file terlebih dahulu");
+            setError("Pilih file terlebih dahulu");
             return;
         }
 
         if (uploadFile.size > 2 * 1024 * 1024) {
-            alert("Ukuran file maksimal 2MB");
+            setError("Ukuran file maksimal 2MB");
             return;
         }
 
         if (uploadFile.type !== 'application/pdf') {
-            alert("Hanya file PDF yang diperbolehkan");
+            setError("Hanya file PDF yang diperbolehkan");
             return;
         }
 
@@ -40,63 +44,124 @@ export const UploadModalTubel: React.FC<UploadModalTubelProps> = ({
         try {
             await onSubmit(data.layanan_tubel_id || data.id, uploadFile);
             setUploadFile(null);
+            setError(null);
             onClose();
         } catch (err) {
             console.error("Upload error:", err);
-            alert("Gagal upload berkas");
+            setError("Gagal upload berkas. Silakan coba lagi.");
         } finally {
             setUploading(false);
         }
     };
 
     const namaLengkap = `${data.peg_gelar_depan || ""} ${data.peg_nama || ""} ${data.peg_gelar_belakang || ""}`.trim();
+    const usiaUsulan = data.layanan_tubel_usia || 0;
+
+    const getJenisTubelText = () => {
+        if (data.layanan_tubel_status_pns === "dalam_negeri") {
+            return "Dalam Negeri";
+        } else if (data.layanan_tubel_status_pns === "luar_negeri") {
+            return "Luar Negeri";
+        }
+        return "-";
+    };
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
             <div className="relative bg-white rounded-3xl max-w-md w-full shadow-2xl animate-fadeIn">
-                <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white p-6 rounded-t-3xl">
+                <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-t-3xl">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <Upload size={24} />
                             <h2 className="text-xl font-black">Upload Berkas Hasil Tugas Belajar</h2>
                         </div>
-                        <button onClick={onClose} className="p-1 hover:bg-white/20 rounded-lg transition-colors">
+                        <button 
+                            onClick={onClose} 
+                            disabled={uploading}
+                            className="p-1 hover:bg-white/20 rounded-lg transition-colors disabled:opacity-50"
+                        >
                             <X size={20} />
                         </button>
                     </div>
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6">
-                    <div className="mb-4">
-                        <label className="block text-xs font-bold text-slate-600 mb-2">Nama Pegawai</label>
-                        <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
-                            <User size={16} className="text-slate-400" />
-                            <span className="text-sm font-medium text-slate-700">
-                                {namaLengkap || "-"}
-                            </span>
+                    {/* Informasi Pegawai */}
+                    <div className="mb-4 bg-slate-50 rounded-xl p-4">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">
+                            Informasi Pegawai
+                        </p>
+                        
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-3">
+                                <User size={14} className="text-slate-400 flex-shrink-0" />
+                                <div className="flex-1">
+                                    <p className="text-[9px] text-slate-400">Nama Lengkap</p>
+                                    <p className="text-sm font-medium text-slate-700">
+                                        {namaLengkap || "-"}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                                <GraduationCap size={14} className="text-slate-400 flex-shrink-0" />
+                                <div className="flex-1">
+                                    <p className="text-[9px] text-slate-400">NIP</p>
+                                    <p className="text-sm font-mono text-slate-700">
+                                        {data.peg_nip || "-"}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                                <Building size={14} className="text-slate-400 flex-shrink-0" />
+                                <div className="flex-1">
+                                    <p className="text-[9px] text-slate-400">Unit Kerja</p>
+                                    <p className="text-sm text-slate-700 line-clamp-1">
+                                        {data.unit_org_induk_nm || "-"}
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div className="mb-4">
-                        <label className="block text-xs font-bold text-slate-600 mb-2">NIP</label>
-                        <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
-                            <GraduationCap size={16} className="text-slate-400" />
-                            <span className="text-sm font-mono text-slate-700">
-                                {data.peg_nip || "-"}
-                            </span>
+                    {/* Informasi Usulan */}
+                    <div className="mb-4 bg-blue-50 rounded-xl p-4">
+                        <p className="text-[10px] font-bold text-blue-600 uppercase tracking-wider mb-3">
+                            Detail Usulan
+                        </p>
+                        
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <p className="text-[9px] text-slate-400">Usia Usulan</p>
+                                <p className="text-sm font-bold text-blue-700">{usiaUsulan} tahun</p>
+                            </div>
+                            <div>
+                                <p className="text-[9px] text-slate-400">Jenis Tugas Belajar</p>
+                                <p className="text-sm font-bold text-blue-700">{getJenisTubelText()}</p>
+                            </div>
                         </div>
                     </div>
 
-                    <div className="mb-6">
-                        <label className="block text-xs font-bold text-slate-600 mb-2">Berkas Hasil (PDF)</label>
+                    {/* Upload Area */}
+                    <div className="mb-4">
+                        <label className="block text-xs font-bold text-slate-600 mb-2">
+                            Berkas Hasil (PDF)
+                        </label>
                         <div
-                            className="border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center hover:border-emerald-500 transition-colors cursor-pointer"
+                            className={`border-2 border-dashed rounded-2xl p-6 text-center transition-all cursor-pointer
+                                ${error ? 'border-red-300 bg-red-50' : 'border-slate-200 hover:border-blue-500 bg-slate-50 hover:bg-blue-50'}
+                            `}
                             onClick={() => document.getElementById('uploadFileInputTubel')?.click()}
                         >
-                            <Upload size={32} className="mx-auto text-slate-400 mb-2" />
-                            <p className="text-xs text-slate-500">Klik untuk pilih file PDF</p>
-                            <p className="text-[9px] text-slate-400">Maksimal 2MB</p>
+                            <Upload size={32} className={`mx-auto mb-2 ${error ? 'text-red-400' : 'text-slate-400'}`} />
+                            <p className="text-xs font-medium text-slate-600">
+                                Klik untuk pilih file PDF
+                            </p>
+                            <p className="text-[9px] text-slate-400 mt-1">
+                                Maksimal 2MB
+                            </p>
                             <input
                                 id="uploadFileInputTubel"
                                 type="file"
@@ -105,12 +170,14 @@ export const UploadModalTubel: React.FC<UploadModalTubelProps> = ({
                                 onChange={(e) => {
                                     if (e.target.files && e.target.files[0]) {
                                         const file = e.target.files[0];
+                                        setError(null);
+                                        
                                         if (file.size > 2 * 1024 * 1024) {
-                                            alert("Ukuran file maksimal 2MB");
+                                            setError("Ukuran file maksimal 2MB");
                                             return;
                                         }
                                         if (file.type !== 'application/pdf') {
-                                            alert("Hanya file PDF yang diperbolehkan");
+                                            setError("Hanya file PDF yang diperbolehkan");
                                             return;
                                         }
                                         setUploadFile(file);
@@ -118,39 +185,56 @@ export const UploadModalTubel: React.FC<UploadModalTubelProps> = ({
                                 }}
                             />
                         </div>
+
+                        {/* File Info */}
                         {uploadFile && (
-                            <div className="mt-3 p-3 bg-green-50 rounded-xl flex items-center gap-2">
-                                <FileCheck size={16} className="text-green-600" />
+                            <div className="mt-3 p-3 bg-green-50 rounded-xl flex items-center gap-2 border border-green-200">
+                                <FileCheck size={16} className="text-green-600 flex-shrink-0" />
                                 <span className="text-xs text-green-700 truncate flex-1">{uploadFile.name}</span>
                                 <button
-                                    onClick={() => setUploadFile(null)}
-                                    className="text-red-500 hover:text-red-700"
+                                    onClick={() => {
+                                        setUploadFile(null);
+                                        setError(null);
+                                    }}
+                                    className="text-red-500 hover:text-red-700 transition-colors"
                                     type="button"
                                 >
                                     <X size={14} />
                                 </button>
                             </div>
                         )}
-                        <p className="text-[10px] text-slate-400 mt-2">
-                            Pastikan berkas yang diupload adalah SK / Surat Keputusan hasil akhir yang sudah diverifikasi
+
+                        {/* Error Message */}
+                        {error && (
+                            <div className="mt-3 p-2 bg-red-50 rounded-lg flex items-center gap-2">
+                                <AlertCircle size={14} className="text-red-500 flex-shrink-0" />
+                                <p className="text-[10px] text-red-600">{error}</p>
+                            </div>
+                        )}
+
+                        <p className="text-[10px] text-slate-400 mt-3">
+                            Pastikan berkas yang diupload adalah SK / Keputusan Tugas Belajar 
+                            hasil akhir yang sudah diverifikasi dan ditandatangani.
                         </p>
                     </div>
 
-                    <div className="flex gap-3">
+                    {/* Action Buttons */}
+                    <div className="flex gap-3 mt-6">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="flex-1 px-4 py-2 border border-slate-200 rounded-xl text-sm font-bold hover:bg-slate-50 transition-colors"
+                            disabled={uploading}
+                            className="flex-1 px-4 py-2 border border-slate-200 rounded-xl text-sm font-bold hover:bg-slate-50 transition-colors disabled:opacity-50"
                         >
                             Batal
                         </button>
                         <button
                             type="submit"
                             disabled={uploading || !uploadFile}
-                            className="flex-1 px-4 py-2 bg-emerald-500 text-white rounded-xl text-sm font-bold hover:bg-emerald-600 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-xl text-sm font-bold hover:bg-blue-600 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {uploading ? <RefreshCcw size={14} className="animate-spin" /> : <Upload size={14} />}
-                            {uploading ? "Mengupload..." : "Upload"}
+                            {uploading ? "Mengupload..." : "Upload Berkas"}
                         </button>
                     </div>
                 </form>

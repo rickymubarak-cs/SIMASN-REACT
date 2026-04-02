@@ -1,9 +1,10 @@
+// src/components/tables/DataTableTubel.tsx
 import React, { useState } from 'react';
-import { Eye, Edit, Ban, CheckCircle, Upload, ChevronUp, ChevronDown, Search } from 'lucide-react';
+import { Eye, Edit, Ban, CheckCircle, Upload, ChevronUp, ChevronDown, GraduationCap } from 'lucide-react';
 import { StatusBadge } from '../common/StatusBadge';
 import { formatDateTimeId } from '../../utils/formatters';
 
-interface DataTableSlksProps {
+interface DataTableTubelProps {
     data: any[];
     startIndex: number;
     onDetail: (item: any) => void;
@@ -13,10 +14,10 @@ interface DataTableSlksProps {
     onUpload: (item: any) => void;
 }
 
-type SortField = 'nama' | 'nip' | 'unit' | 'tanggal' | 'status';
+type SortField = 'nama' | 'nip' | 'unit' | 'tanggal' | 'status' | 'usia';
 type SortOrder = 'asc' | 'desc';
 
-export const DataTableSlks: React.FC<DataTableSlksProps> = ({
+export const DataTableTubel: React.FC<DataTableTubelProps> = ({
     data,
     startIndex,
     onDetail,
@@ -27,7 +28,6 @@ export const DataTableSlks: React.FC<DataTableSlksProps> = ({
 }) => {
     const [sortField, setSortField] = useState<SortField>('tanggal');
     const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
-    const [searchColumn, setSearchColumn] = useState('');
     const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
 
     const handleSort = (field: SortField) => {
@@ -82,8 +82,12 @@ export const DataTableSlks: React.FC<DataTableSlksProps> = ({
                     bVal = b.layanan_tgl || b.timestamp || '';
                     break;
                 case 'status':
-                    aVal = a.layanan_status || '';
-                    bVal = b.layanan_status || '';
+                    aVal = a.layanan_tubel_status || '';
+                    bVal = b.layanan_tubel_status || '';
+                    break;
+                case 'usia':
+                    aVal = a.layanan_tubel_usia || 0;
+                    bVal = b.layanan_tubel_usia || 0;
                     break;
                 default:
                     return 0;
@@ -101,6 +105,15 @@ export const DataTableSlks: React.FC<DataTableSlksProps> = ({
         return `${item.peg_gelar_depan || ""} ${item.peg_nama || ""} ${item.peg_gelar_belakang || ""}`.trim();
     };
 
+    const getJenisTubelBadge = (item: any) => {
+        if (item.layanan_tubel_status_pns === "dalam_negeri") {
+            return <span className="text-[9px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Dalam Negeri</span>;
+        } else if (item.layanan_tubel_status_pns === "luar_negeri") {
+            return <span className="text-[9px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">Luar Negeri</span>;
+        }
+        return <span className="text-[9px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">-</span>;
+    };
+
     return (
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div className="overflow-x-auto">
@@ -111,44 +124,35 @@ export const DataTableSlks: React.FC<DataTableSlksProps> = ({
                                 #
                             </th>
                             <th className="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
-                                <button onClick={() => handleSort('nama')} className="flex items-center gap-1 hover:text-amber-600">
+                                <button onClick={() => handleSort('nama')} className="flex items-center gap-1 hover:text-blue-600">
                                     Nama Pegawai {getSortIcon('nama')}
                                 </button>
-                                {/* <input
-                                    type="text"
-                                    placeholder="Filter..."
-                                    className="mt-1 px-2 py-1 text-xs border rounded w-full"
-                                    value={columnFilters['peg_nama'] || ''}
-                                    onChange={(e) => handleColumnFilter('peg_nama', e.target.value)}
-                                /> */}
                             </th>
                             <th className="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
-                                <button onClick={() => handleSort('nip')} className="flex items-center gap-1 hover:text-amber-600">
+                                <button onClick={() => handleSort('nip')} className="flex items-center gap-1 hover:text-blue-600">
                                     NIP {getSortIcon('nip')}
                                 </button>
-                                {/* <input
-                                    type="text"
-                                    placeholder="Filter..."
-                                    className="mt-1 px-2 py-1 text-xs border rounded w-32"
-                                    value={columnFilters['peg_nip'] || ''}
-                                    onChange={(e) => handleColumnFilter('peg_nip', e.target.value)}
-                                /> */}
                             </th>
                             <th className="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
-                                <button onClick={() => handleSort('unit')} className="flex items-center gap-1 hover:text-amber-600">
+                                <button onClick={() => handleSort('unit')} className="flex items-center gap-1 hover:text-blue-600">
                                     Unit Kerja {getSortIcon('unit')}
                                 </button>
                             </th>
                             <th className="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
-                                Masa Kerja
+                                <button onClick={() => handleSort('usia')} className="flex items-center gap-1 hover:text-blue-600">
+                                    Usia Usulan {getSortIcon('usia')}
+                                </button>
                             </th>
                             <th className="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
-                                <button onClick={() => handleSort('tanggal')} className="flex items-center gap-1 hover:text-amber-600">
+                                Jenis
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
+                                <button onClick={() => handleSort('tanggal')} className="flex items-center gap-1 hover:text-blue-600">
                                     Tanggal {getSortIcon('tanggal')}
                                 </button>
                             </th>
                             <th className="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
-                                <button onClick={() => handleSort('status')} className="flex items-center gap-1 hover:text-amber-600">
+                                <button onClick={() => handleSort('status')} className="flex items-center gap-1 hover:text-blue-600">
                                     Status {getSortIcon('status')}
                                 </button>
                             </th>
@@ -159,7 +163,7 @@ export const DataTableSlks: React.FC<DataTableSlksProps> = ({
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                         {filteredAndSortedData.map((item, idx) => {
-                            const status = item.layanan_status || "pengajuan";
+                            const status = item.layanan_tubel_status || "pengajuan";
                             const namaLengkap = getNamaLengkap(item);
 
                             return (
@@ -177,7 +181,10 @@ export const DataTableSlks: React.FC<DataTableSlksProps> = ({
                                         {item.unit_org_induk_nm || "-"}
                                     </td>
                                     <td className="px-4 py-3 text-sm text-slate-600">
-                                        {item.lay_slks_mk || "-"}
+                                        {item.layanan_tubel_usia || 0} tahun
+                                    </td>
+                                    <td className="px-4 py-3">
+                                        {getJenisTubelBadge(item)}
                                     </td>
                                     <td className="px-4 py-3 text-xs text-slate-500">
                                         {formatDateTimeId(item.layanan_tgl || item.timestamp)}
@@ -189,7 +196,7 @@ export const DataTableSlks: React.FC<DataTableSlksProps> = ({
                                         <div className="flex gap-1 justify-center">
                                             <button
                                                 onClick={() => onDetail(item)}
-                                                className="p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-amber-100 hover:text-amber-600 transition-all"
+                                                className="p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-blue-100 hover:text-blue-600 transition-all"
                                                 title="Detail"
                                             >
                                                 <Eye size={14} />
@@ -212,7 +219,7 @@ export const DataTableSlks: React.FC<DataTableSlksProps> = ({
                                                         <Ban size={14} />
                                                     </button>
                                                     <button
-                                                        onClick={() => onTerima(item.slks_id, false)}
+                                                        onClick={() => onTerima(item.layanan_tubel_id, false)}
                                                         className="p-1.5 rounded-lg bg-green-100 text-green-600 hover:bg-green-600 hover:text-white transition-all"
                                                         title="Terima"
                                                     >
@@ -241,17 +248,10 @@ export const DataTableSlks: React.FC<DataTableSlksProps> = ({
 
             {filteredAndSortedData.length === 0 && (
                 <div className="text-center py-12">
-                    <p className="text-slate-500">Tidak ada data yang ditemukan</p>
+                    <GraduationCap size={40} className="mx-auto text-slate-300 mb-3" />
+                    <p className="text-slate-500">Tidak ada data Tugas Belajar yang ditemukan</p>
                 </div>
             )}
-
-            {/* Table footer with info */}
-            {/* <div className="bg-slate-50 px-4 py-3 border-t border-slate-200">
-                <div className="flex justify-between items-center text-xs text-slate-500">
-                    <span>Menampilkan {filteredAndSortedData.length} dari {data.length} data</span>
-                    <span className="font-mono">SLKS - Satya Lencana Karya Satya</span>
-                </div>
-            </div> */}
         </div>
     );
 };
