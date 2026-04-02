@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { AlertCircle, Search, Database } from 'lucide-react';
 import { useDataRiwayat } from '../hooks/useDataRiwayat';
 import { Navbar } from '../components/layout/Navbar';
-import { DashboardCard } from '../components/layout/DashboardCard';
+import { DashboardSearchBar } from '../components/layout/DashboardSearchBar';
 import { DataCardDataRiwayat } from '../components/cards/DataCardDataRiwayat';
 import { DetailModalDataRiwayat } from '../components/modals/DetailModalDataRiwayat';
 import { ActionModal } from '../components/modals/ActionModal';
@@ -125,25 +125,25 @@ export default function DataRiwayat({ activeTab, onTabChange }: DataRiwayatProps
 
                 {/* Dashboard Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <DashboardCard
+                    <DashboardSearchBar
                         label="Total Berkas"
                         value={data.length}
                         icon="Database"
                         color="sky"
                     />
-                    <DashboardCard
+                    <DashboardSearchBar
                         label="Unit Kerja"
                         value={perangkatDaerah || 'Semua'}
                         icon="MapPin"
                         color="orange"
                     />
-                    <DashboardCard
+                    <DashboardSearchBar
                         label="Status Sistem"
                         value="Online"
                         icon="RefreshCcw"
                         color="emerald"
                     />
-                    <DashboardCard
+                    <DashboardSearchBar
                         label="Jam Server"
                         value={new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         icon="Clock"

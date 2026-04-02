@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { AlertCircle, UserMinus, Settings2 } from 'lucide-react';
 import { usePemberhentianData } from '../hooks/usePemberhentianData';
 import { Navbar } from '../components/layout/Navbar';
-import { DashboardCard } from '../components/layout/DashboardCard';
+import { DashboardSearchBar } from '../components/layout/DashboardSearchBar';
 import { SearchBar } from '../components/common/SearchBar';
 import { SkeletonLoading } from '../components/common/SkeletonLoading';
 import { pemberhentianService } from '../service/pemberhentianService';
@@ -373,25 +373,25 @@ export default function Pemberhentian({ activeTab, onTabChange }: PemberhentianP
 
                 {/* Dashboard Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <DashboardCard
+                    <DashboardSearchBar
                         label="Total Berkas"
                         value={data.length}
                         icon="Database"
                         color="rose"
                     />
-                    <DashboardCard
+                    <DashboardSearchBar
                         label="Unit Kerja"
                         value={perangkatDaerah || 'Semua'}
                         icon="MapPin"
                         color="orange"
                     />
-                    <DashboardCard
+                    <DashboardSearchBar
                         label="Status Sistem"
                         value="Online"
                         icon="RefreshCcw"
                         color="emerald"
                     />
-                    <DashboardCard
+                    <DashboardSearchBar
                         label="Jam Server"
                         value={new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         icon="Clock"

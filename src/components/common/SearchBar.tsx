@@ -1,6 +1,9 @@
+// components/common/SearchBar.tsx
 import React from 'react';
-import { Search, MapPin, RefreshCcw, ChevronRight, X } from 'lucide-react';
+import { Search, MapPin, RefreshCcw, ChevronRight, X, LayoutGrid, Grid3X3, LayoutList, Table } from 'lucide-react';
 import { SearchResult } from '../../types';
+
+type ViewMode = 'standard' | 'compact' | 'detailed' | 'table';
 
 interface SearchBarProps {
     // Props untuk pencarian
@@ -22,11 +25,23 @@ interface SearchBarProps {
     onSelectResult?: (nip: string) => void;
     onClearResults?: () => void;
 
+    // Props untuk view mode
+    viewMode?: ViewMode;
+    onViewModeChange?: (mode: ViewMode) => void;
+    itemCount?: number;
+
     // Props untuk styling
     placeholder?: string;
     buttonText?: string;
     variant?: 'default' | 'integration';
 }
+
+const viewModes = [
+    { id: 'standard' as const, label: 'Standard', icon: LayoutGrid, title: 'Modern Card View' },
+    { id: 'compact' as const, label: 'Compact', icon: Grid3X3, title: 'High Density View' },
+    { id: 'detailed' as const, label: 'Detailed', icon: LayoutList, title: 'Informative List View' },
+    { id: 'table' as const, label: 'Table', icon: Table, title: 'Administrative Table View' }
+];
 
 export const SearchBar: React.FC<SearchBarProps> = ({
     searchTerm,
@@ -42,6 +57,9 @@ export const SearchBar: React.FC<SearchBarProps> = ({
     totalResults = 0,
     onSelectResult,
     onClearResults,
+    viewMode = 'standard',
+    onViewModeChange,
+    itemCount = 0,
     placeholder = "Cari berdasarkan NIP atau Nama Pegawai...",
     buttonText = "Cari",
     variant = 'default'
@@ -64,12 +82,16 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         default: {
             button: 'bg-slate-900 hover:bg-blue-600',
             inputBorder: 'focus:ring-blue-500/5',
-            resultHover: 'hover:bg-slate-50'
+            resultHover: 'hover:bg-slate-50',
+            viewModeActive: 'bg-white text-blue-600 shadow-sm ring-1 ring-blue-200',
+            viewModeInactive: 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
         },
         integration: {
             button: 'bg-indigo-600 hover:bg-indigo-700',
             inputBorder: 'focus:ring-indigo-500/5',
-            resultHover: 'hover:bg-indigo-50'
+            resultHover: 'hover:bg-indigo-50',
+            viewModeActive: 'bg-white text-indigo-600 shadow-sm ring-1 ring-indigo-200',
+            viewModeInactive: 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
         }
     };
 
@@ -77,7 +99,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 
     return (
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200/60">
-            <div className="flex flex-col md:flex-row gap-4">
+            {/* Search and Filter Row */}
+            <div className="flex flex-col lg:flex-row gap-4">
                 {/* Search Input */}
                 <div className="flex-1 relative group">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={18} />
@@ -136,6 +159,63 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                 )}
             </div>
 
+            {/* View Mode & Info Row */}
+            {onViewModeChange && (
+                <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    {/* View Mode Selector */}
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider hidden sm:block">
+                            Tampilan:
+                        </span>
+                        <div className="flex gap-1 bg-slate-50 p-1 rounded-xl">
+                            {viewModes.map((mode) => {
+                                const Icon = mode.icon;
+                                const isActive = viewMode === mode.id;
+
+                                return (
+                                    <button
+                                        key={mode.id}
+                                        onClick={() => onViewModeChange(mode.id)}
+                                        className={`
+                                            relative px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5
+                                            ${isActive
+                                                ? currentVariant.viewModeActive
+                                                : currentVariant.viewModeInactive
+                                            }
+                                        `}
+                                        title={mode.title}
+                                    >
+                                        <Icon size={14} />
+                                        <span className="hidden md:inline">{mode.label}</span>
+
+                                        {/* Tooltip untuk mobile */}
+                                        <span className="md:hidden absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-slate-800 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                                            {mode.title}
+                                        </span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* Info & Keyboard Shortcut */}
+                    <div className="flex items-center justify-between sm:justify-end gap-3 text-xs text-slate-400">
+                        {itemCount > 0 && (
+                            <div className="flex items-center gap-1 bg-slate-50 px-2 py-1 rounded-lg">
+                                <span className="font-bold text-slate-600">{itemCount}</span>
+                                <span>Usulan Pelayanan</span>
+                            </div>
+                        )}
+
+                        <div className="hidden lg:flex items-center gap-1 text-[10px]">
+                            <span className="px-1.5 py-0.5 bg-slate-100 rounded font-mono">Ctrl</span>
+                            <span>+</span>
+                            <span className="px-1.5 py-0.5 bg-slate-100 rounded font-mono">1-4</span>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Search Results Dropdown */}
             {showResults && (
                 <div className="mt-4 border border-slate-200 rounded-xl overflow-hidden animate-fadeIn">
@@ -158,8 +238,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                                         onClick={() => isValidNip && onSelectResult?.(pegawai.nip)}
                                         disabled={!isValidNip}
                                         className={`w-full flex items-center justify-between px-4 py-3 transition-colors border-b border-slate-100 last:border-0 text-left ${isValidNip
-                                                ? `cursor-pointer ${currentVariant.resultHover}`
-                                                : 'opacity-50 cursor-not-allowed'
+                                            ? `cursor-pointer ${currentVariant.resultHover}`
+                                            : 'opacity-50 cursor-not-allowed'
                                             }`}
                                     >
                                         <div>

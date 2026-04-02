@@ -1,4 +1,3 @@
-// src/service/slksService.ts
 import API from './api';
 
 export interface SlksData {
@@ -29,11 +28,15 @@ export interface SlksData {
     [key: string]: any;
 }
 
-// Base URL
-const BASE_URL = "https://simasn.pontianak.go.id";
-const BASE_URL_BERKAS = `${BASE_URL}/assets/berkas/Layanan/SLKS/`;
-const BASE_URL_BERKAS_ADMIN = `${BASE_URL}/assets/berkas/layanan_admin/slks/`;
-const BASE_URL_FOTO = `${BASE_URL}/assets/berkas/profil/`;
+// ==============================================
+// BASE URL UNTUK BERKAS - TETAP PAKAI SERVER LAMA
+// ==============================================
+
+// SERVER LAMA untuk file/foto (CI3)
+const BASE_URL_OLD = "https://simasn.pontianak.go.id";
+const BASE_URL_BERKAS = `${BASE_URL_OLD}/assets/berkas/Layanan/Slks/`;
+const BASE_URL_BERKAS_ADMIN = `${BASE_URL_OLD}/assets/berkas/layanan_admin/slks/`;
+const BASE_URL_FOTO = `${BASE_URL_OLD}/assets/berkas/profil/`;
 
 // Konfigurasi file untuk SLKS
 export const slksFileConfig = [
@@ -48,26 +51,32 @@ export const slksFileConfig = [
     { key: 'file_laySlks_konversinip', label: 'SK Konversi NIP', icon: 'IdCard', color: 'rose' }
 ];
 
+// ==============================================
+// SLKS SERVICE
+// ==============================================
+
 export const slksService = {
     // Get all SLKS data
     getAll: async (perangkatDaerah: string = ""): Promise<SlksData[]> => {
         try {
+            // API dari Laravel local
             const url = perangkatDaerah
-                ? `api/EndPointAPI/getslks/${perangkatDaerah}`
-                : 'api/EndPointAPI/getslks';
+                ? `api/slks/${perangkatDaerah}`  // GET /api/slks/{perangkat_daerah}
+                : 'api/slks';                    // GET /api/slks
 
             const response = await API.get(url);
             console.log('SLKS API Response:', response.data);
 
-            if (response.data?.status && response.data?.data) {
-                const slksData = response.data.data.slks;
+            // Response dari Laravel: { status: "success", message: "...", slks: [...] }
+            if (response.data?.status === 'success' && response.data?.slks) {
+                const slksData = response.data.slks;
 
                 if (Array.isArray(slksData)) {
-                    // Proses data untuk menambahkan URL file yang benar
+                    // Proses data untuk menambahkan URL file yang benar (tetap dari server lama)
                     return slksData.map((item: any) => {
                         const processedItem: any = { ...item };
 
-                        // Tambahkan URL untuk setiap file yang ada
+                        // Tambahkan URL untuk setiap file yang ada - PAKAI SERVER LAMA
                         slksFileConfig.forEach(fileConfig => {
                             const fileValue = item[fileConfig.key];
                             if (fileValue && fileValue.trim() !== '') {
@@ -77,12 +86,12 @@ export const slksService = {
                             }
                         });
 
-                        // URL untuk berkas hasil
+                        // URL untuk berkas hasil - PAKAI SERVER LAMA
                         processedItem.file_status_pelayanan_url = item.file_status_pelayanan
                             ? `${BASE_URL_BERKAS_ADMIN}${item.file_status_pelayanan}`
                             : null;
 
-                        // URL untuk foto
+                        // URL untuk foto - PAKAI SERVER LAMA
                         processedItem.foto_url = item.foto
                             ? `${BASE_URL_FOTO}${item.foto}`
                             : null;
@@ -103,33 +112,33 @@ export const slksService = {
     updateStatus: async (id: string, status: string, keterangan?: string): Promise<any> => {
         try {
             let endpoint = '';
-            let method: 'get' | 'post' = 'get';
-            let data = null;
+            let method: 'put' | 'post' = 'post';
+            let data: any = null;
 
-            if (status === 'diterima') {
-                endpoint = `layanan_admin/slksStatus?terima=${id}`;
-            } else if (status === 'selesai') {
-                endpoint = `layanan_admin/slksStatus?terima_tembusan=${id}`;
-            } else if (status === 'ditolak') {
-                endpoint = `layanan_admin/slksStatus?tolak=${id}`;
-            } else if (status === 'perbaikan') {
-                endpoint = 'layanan_admin/statusslksPerbaiki';
-                method = 'post';
-                const formData = new URLSearchParams();
-                formData.append('slks_id', id);
-                if (keterangan) {
-                    formData.append('keterangan', keterangan);
-                }
-                data = formData;
+            switch (status) {
+                case 'diterima':
+                    endpoint = `api/slks/${id}/terima`;
+                    method = 'put';
+                    break;
+                case 'ditolak':
+                    endpoint = `api/slks/${id}/tolak`;
+                    method = 'put';
+                    data = { keterangan };
+                    break;
+                case 'perbaikan':
+                    endpoint = `api/slks/${id}/perbaikan`;
+                    method = 'post';
+                    data = { keterangan };
+                    break;
+                default:
+                    throw new Error(`Status tidak dikenal: ${status}`);
             }
 
             let response;
             if (method === 'post') {
-                response = await API.post(endpoint, data, {
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-                });
+                response = await API.post(endpoint, data);
             } else {
-                response = await API.get(endpoint);
+                response = await API.put(endpoint, data);
             }
 
             return response.data;
@@ -139,14 +148,14 @@ export const slksService = {
         }
     },
 
-    // Upload berkas hasil
+    // Upload berkas hasil - upload ke Laravel local, tapi file akan disimpan di local dulu
     uploadBerkas: async (id: string, file: File): Promise<any> => {
         try {
             const formData = new FormData();
             formData.append('file_status_pelayanan', file);
             formData.append('slks_id', id);
 
-            const response = await API.post('layanan_admin/berkasLayananSlks', formData, {
+            const response = await API.post(`api/slks/${id}/upload`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
 
@@ -164,8 +173,9 @@ export const slksService = {
             formData.append('file_status_pelayanan', newFile);
             formData.append('slks_id', id);
             formData.append('old_file_status_pelayanan', oldFile);
+            formData.append('_method', 'PUT');
 
-            const response = await API.post('layanan_admin/ubahberkasLayananSlks', formData, {
+            const response = await API.post(`api/slks/${id}/berkas`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
 
@@ -179,9 +189,29 @@ export const slksService = {
     // Get detail by ID
     getById: async (id: string): Promise<SlksData | null> => {
         try {
-            const response = await API.get(`EndPointAPI/getslksbyid/${id}`);
-            if (response.data?.status && response.data?.data) {
-                return response.data.data;
+            const response = await API.get(`api/slks/detail/${id}`);
+
+            if (response.data?.status === 'success' && response.data?.slks) {
+                const item = response.data.slks;
+
+                // Proses URL file seperti di getAll
+                const processedItem: any = { ...item };
+                slksFileConfig.forEach(fileConfig => {
+                    const fileValue = item[fileConfig.key];
+                    if (fileValue && fileValue.trim() !== '') {
+                        processedItem[`${fileConfig.key}_url`] = `${BASE_URL_BERKAS}${fileValue}`;
+                    } else {
+                        processedItem[`${fileConfig.key}_url`] = null;
+                    }
+                });
+                processedItem.file_status_pelayanan_url = item.file_status_pelayanan
+                    ? `${BASE_URL_BERKAS_ADMIN}${item.file_status_pelayanan}`
+                    : null;
+                processedItem.foto_url = item.foto
+                    ? `${BASE_URL_FOTO}${item.foto}`
+                    : null;
+
+                return processedItem;
             }
             return null;
         } catch (error) {

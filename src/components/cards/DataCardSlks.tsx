@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, Clock, Eye, Edit, Ban, CheckCircle, Upload, Award, FileCheck } from 'lucide-react';
+import { User, Clock, Eye, Edit, Ban, CheckCircle, Upload, Award, FileCheck, Building, MapPin } from 'lucide-react';
 import { StatusBadge } from '../common/StatusBadge';
 import { formatDateTimeId } from '../../utils/formatters';
 import { slksFileConfig } from '../../service/slksService';
@@ -26,6 +26,7 @@ export const DataCardSlks: React.FC<DataCardSlksProps> = ({
     const status = data.layanan_status || "pengajuan";
     const namaLengkap = `${data.peg_gelar_depan || ""} ${data.peg_nama || ""} ${data.peg_gelar_belakang || ""}`.trim();
     const masaKerja = data.lay_slks_mk || "-";
+    const unitKerja = data.unit_org_induk_nm || "-";
 
     // Hitung jumlah file yang tersedia
     const availableFiles = slksFileConfig.filter(
@@ -54,6 +55,21 @@ export const DataCardSlks: React.FC<DataCardSlksProps> = ({
                 <p className="text-[9px] font-bold text-slate-400 font-mono mb-2">
                     NIP. {data.peg_nip || "-"}
                 </p>
+
+                {/* Perangkat Daerah - Style lebih elegan */}
+                <div className="mb-3">
+                    <div className="flex items-start gap-1.5">
+                        <Building size={10} className="text-amber-400 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                            <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">
+                                Unit Kerja
+                            </p>
+                            <p className="text-[10px] font-medium text-slate-700 leading-tight line-clamp-2" title={unitKerja}>
+                                {unitKerja}
+                            </p>
+                        </div>
+                    </div>
+                </div>
 
                 <div className="flex flex-wrap gap-1 mb-2">
                     <span className="text-[9px] text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
@@ -118,7 +134,7 @@ export const DataCardSlks: React.FC<DataCardSlksProps> = ({
                     )}
                 </div>
 
-                {/* File indicators - tampilkan 4 file pertama */}
+                {/* File indicators */}
                 <div className="flex gap-1 pt-1 flex-wrap">
                     {slksFileConfig.slice(0, 4).map(fileConfig => (
                         data[fileConfig.key] && data[fileConfig.key].trim() !== "" && (

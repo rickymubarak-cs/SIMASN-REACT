@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { AlertCircle, Search, GraduationCap } from 'lucide-react';
 import { useTubelData } from '../hooks/useTubelData';
 import { Navbar } from '../components/layout/Navbar';
-import { DashboardCard } from '../components/layout/DashboardCard';
+import { DashboardSearchBar } from '../components/layout/DashboardSearchBar';
 import { DataCardTubel } from '../components/cards/DataCardTubel';
 import { DetailModalTubel } from '../components/modals/DetailModalTubel';
 import { ActionModal } from '../components/modals/ActionModal';
@@ -124,25 +124,25 @@ export default function Tubel({ activeTab, onTabChange }: TubelProps) {
 
                 {/* Dashboard Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <DashboardCard
+                    <DashboardSearchBar
                         label="Total Berkas"
                         value={data.length}
                         icon="Database"
                         color="emerald"
                     />
-                    <DashboardCard
+                    <DashboardSearchBar
                         label="Unit Kerja"
                         value={perangkatDaerah || 'Semua'}
                         icon="MapPin"
                         color="orange"
                     />
-                    <DashboardCard
+                    <DashboardSearchBar
                         label="Status Sistem"
                         value="Online"
                         icon="RefreshCcw"
                         color="emerald"
                     />
-                    <DashboardCard
+                    <DashboardSearchBar
                         label="Jam Server"
                         value={new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         icon="Clock"

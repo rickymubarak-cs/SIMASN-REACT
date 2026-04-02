@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { AlertCircle, Search } from 'lucide-react';
 import { usePltplhData } from '../hooks/usePltplhData';
 import { Navbar } from '../components/layout/Navbar';
-import { DashboardCard } from '../components/layout/DashboardCard';
+import { DashboardSearchBar } from '../components/layout/DashboardSearchBar';
 import { DataCard } from '../components/cards/DataCard';
 import { DetailModal } from '../components/modals/DetailModal';
 import { ActionModal } from '../components/modals/ActionModal';
@@ -116,25 +116,25 @@ export default function PltPlh({ activeTab, onTabChange }: PltPlhProps) {
 
                 {/* Dashboard Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <DashboardCard
+                    <DashboardSearchBar
                         label="Total Berkas"
                         value={data.length}
                         icon="Database"
                         color="blue"
                     />
-                    <DashboardCard
+                    <DashboardSearchBar
                         label="Unit Kerja"
                         value={perangkatDaerah || 'Semua'}
                         icon="MapPin"
                         color="orange"
                     />
-                    <DashboardCard
+                    <DashboardSearchBar
                         label="Status Sistem"
                         value="Online"
                         icon="RefreshCcw"
                         color="emerald"
                     />
-                    <DashboardCard
+                    <DashboardSearchBar
                         label="Jam Server"
                         value={new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         icon="Clock"
