@@ -25,7 +25,7 @@ export const useKompetensiData = (): UseKompetensiDataReturn => {
             setData(result);
         } catch (err: any) {
             console.error('useKompetensiData - Error:', err);
-            setError(err.message || "Gagal memuat data Pengembangan Kompetensi. Periksa koneksi VPN atau jaringan Anda.");
+            setError(err.message || "Gagal memuat data Kompetensi. Periksa koneksi VPN atau jaringan Anda.");
         } finally {
             setLoading(false);
         }

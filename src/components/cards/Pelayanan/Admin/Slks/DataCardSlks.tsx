@@ -1,5 +1,5 @@
-import React from 'react';
-import { User, Clock, Eye, Edit, Ban, CheckCircle, Upload, Award, FileCheck, Building, MapPin } from 'lucide-react';
+import React, { useState } from 'react';
+import { User, Clock, Eye, Edit, Ban, CheckCircle, Upload, Award, FileCheck, Building, MapPin, Loader } from 'lucide-react';
 import { StatusBadge } from '../../../../common/StatusBadge';
 import { formatDateTimeId } from '../../../../../utils/formatters';
 import { slksFileConfig } from '../../../../../service/slksService';
@@ -14,6 +14,13 @@ interface DataCardSlksProps {
     onUpload?: () => void;
 }
 
+console.log('Card Debug:', {
+    slks_id: data.slks_id,
+    status: status,
+    file_status_pelayanan: data.file_status_pelayanan,
+    hasFile: !!data.file_status_pelayanan
+});
+
 export const DataCardSlks: React.FC<DataCardSlksProps> = ({
     data,
     index,
@@ -23,15 +30,56 @@ export const DataCardSlks: React.FC<DataCardSlksProps> = ({
     onTerima,
     onUpload
 }) => {
+    const [actionLoading, setActionLoading] = useState<string | null>(null);
+
     const status = data.layanan_status || "pengajuan";
     const namaLengkap = `${data.peg_gelar_depan || ""} ${data.peg_nama || ""} ${data.peg_gelar_belakang || ""}`.trim();
     const masaKerja = data.lay_slks_mk || "-";
     const unitKerja = data.unit_org_induk_nm || "-";
 
-    // Hitung jumlah file yang tersedia
     const availableFiles = slksFileConfig.filter(
         fileConfig => data[fileConfig.key] && data[fileConfig.key].trim() !== ""
     ).length;
+
+    // Handler untuk upload/ganti berkas
+    const handleUploadClick = async () => {
+        setActionLoading('upload');
+        try {
+            // Panggil onUpload, nanti akan membuka modal
+            onUpload?.();
+        } finally {
+            // Jangan langsung set false di sini karena modal akan menangani loading state sendiri
+            // setActionLoading(null); // Hapus atau comment
+        }
+    };
+
+    // Handler untuk tombol lainnya
+    const handleTerimaClick = async () => {
+        setActionLoading('terima');
+        try {
+            await onTerima?.(data.slks_id, false);
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const handleDetailClick = () => {
+        setActionLoading('detail');
+        onDetail();
+        setActionLoading(null);
+    };
+
+    const handlePerbaikiClick = () => {
+        setActionLoading('perbaiki');
+        onPerbaiki?.();
+        setActionLoading(null);
+    };
+
+    const handleTolakClick = () => {
+        setActionLoading('tolak');
+        onTolak?.();
+        setActionLoading(null);
+    };
 
     return (
         <div className="bg-white rounded-[3rem] border border-slate-200/60 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all group flex flex-col overflow-hidden relative">
@@ -93,60 +141,68 @@ export const DataCardSlks: React.FC<DataCardSlksProps> = ({
             <div className="bg-slate-50/50 p-4 space-y-2 border-t border-slate-100">
                 <div className="flex gap-1.5 flex-wrap">
                     <button
-                        onClick={onDetail}
-                        className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl text-[9px] font-bold bg-white border border-amber-200 text-amber-600 hover:bg-amber-600 hover:text-white hover:border-amber-600 transition-all"
+                        onClick={handleDetailClick}
+                        disabled={actionLoading === 'detail'}
+                        className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl text-[9px] font-bold bg-white border border-amber-200 text-amber-600 hover:bg-amber-600 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <Eye size={12} /> Detail
+                        {actionLoading === 'detail' ? <Loader size={12} className="animate-spin" /> : <Eye size={12} />}
+                        Detail
                     </button>
 
                     <button
-                        onClick={onPerbaiki}
-                        className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl text-[9px] font-bold bg-white border border-orange-200 text-orange-600 hover:bg-orange-600 hover:text-white transition-all"
+                        onClick={handlePerbaikiClick}
+                        disabled={actionLoading === 'perbaiki'}
+                        className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl text-[9px] font-bold bg-white border border-orange-200 text-orange-600 hover:bg-orange-600 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <Edit size={12} /> Perbaiki
+                        {actionLoading === 'perbaiki' ? <Loader size={12} className="animate-spin" /> : <Edit size={12} />}
+                        Perbaiki
                     </button>
 
                     {status === "pengajuan" && (
                         <>
                             <button
-                                onClick={onTolak}
-                                className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl text-[9px] font-bold bg-white border border-red-200 text-red-600 hover:bg-red-600 hover:text-white transition-all"
+                                onClick={handleTolakClick}
+                                disabled={actionLoading === 'tolak'}
+                                className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl text-[9px] font-bold bg-white border border-red-200 text-red-600 hover:bg-red-600 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <Ban size={12} /> Tolak
+                                {actionLoading === 'tolak' ? <Loader size={12} className="animate-spin" /> : <Ban size={12} />}
+                                Tolak
                             </button>
 
                             <button
-                                onClick={() => onTerima?.(data.slks_id, false)}
-                                className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl text-[9px] font-bold bg-white border border-green-200 text-green-600 hover:bg-green-600 hover:text-white transition-all"
+                                onClick={handleTerimaClick}
+                                disabled={actionLoading === 'terima'}
+                                className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl text-[9px] font-bold bg-white border border-green-200 text-green-600 hover:bg-green-600 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <CheckCircle size={12} /> Terima
+                                {actionLoading === 'terima' ? <Loader size={12} className="animate-spin" /> : <CheckCircle size={12} />}
+                                Terima
                             </button>
                         </>
                     )}
 
-                    {status === "diterima" && (
+                    {/* Tombol Upload/Ganti - TIDAK PERLU disabled dari loading state internal */}
+                    {(status === "diterima" || status === "selesai") && (
                         <button
-                            onClick={onUpload}
-                            className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl text-[9px] font-bold bg-white border border-emerald-200 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all"
+                            onClick={() => onUpload?.(data.slks_id, new File([], ''))}
+                            // HAPUS disabled={actionLoading === 'upload'} 
+                            className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl text-[9px] font-bold bg-white border transition-all hover:text-white ${status === "selesai"
+                                ? 'border-blue-200 text-blue-600 hover:bg-blue-600'
+                                : 'border-emerald-200 text-emerald-600 hover:bg-emerald-600'
+                                }`}
+                            title={status === "selesai" ? "Ganti Berkas" : "Upload Berkas"}
                         >
-                            <Upload size={12} /> Upload
+                            <Upload size={12} />
+                            {status === "selesai" ? "Ganti" : "Upload"}
                         </button>
                     )}
-                </div>
 
-                {/* File indicators */}
-                <div className="flex gap-1 pt-1 flex-wrap">
-                    {slksFileConfig.slice(0, 4).map(fileConfig => (
-                        data[fileConfig.key] && data[fileConfig.key].trim() !== "" && (
-                            <span key={fileConfig.key} className="text-[8px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-600">
-                                ✓ {fileConfig.label.slice(0, 12)}
-                            </span>
-                        )
-                    ))}
-                    {availableFiles > 4 && (
-                        <span className="text-[8px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">
-                            +{availableFiles - 4} lainnya
-                        </span>
+                    {data.file_status_pelayanan && (
+                        <div className="mt-2 pt-2 border-t border-slate-100">
+                            <div className="flex items-center gap-1 text-[8px] text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                                <FileCheck size={10} />
+                                <span>Berkas sudah diupload</span>
+                            </div>
+                        </div>
                     )}
                 </div>
             </div>

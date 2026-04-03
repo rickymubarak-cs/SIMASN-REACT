@@ -1,6 +1,6 @@
 // src/components/modals/ActionModal.tsx
 import React, { useState } from 'react';
-import { Edit, Ban, Send, X, User, Loader } from 'lucide-react';
+import { Edit, Ban, Send, X, User, Loader, Maximize2, Minimize2 } from 'lucide-react';
 
 interface ActionModalProps {
     isOpen: boolean;
@@ -22,14 +22,17 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     isLoading = false
 }) => {
     const [reason, setReason] = useState("");
+    const [isExpanded, setIsExpanded] = useState(false);
 
     if (!isOpen || !data) return null;
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (reason.trim()) {
-            // Gunakan ID yang sesuai (untuk TUBEL: layanan_tubel_id, untuk SLKS: slks_id)
-            const id = data.layanan_tubel_id || data.slks_id || data.id;
+            const id = data.layanan_tubel_id || data.slks_id || data.layanan_id ||
+                data.layanan_cuti_id || data.layanan_gaji_id || data.layanan_jf_id ||
+                data.layanan_pemberhentian_id || data.komp_id || data.layanan_diklat_id ||
+                data.layanan_data_id || data.layanan_pltplh_id || data.id;
             onSubmit(id, reason);
             setReason("");
             onClose();
@@ -45,8 +48,8 @@ export const ActionModal: React.FC<ActionModalProps> = ({
         : 'bg-red-500 hover:bg-red-600';
 
     const placeholder = actionType === 'perbaiki'
-        ? 'Masukkan keterangan perbaikan...'
-        : 'Masukkan alasan penolakan...';
+        ? 'Masukkan keterangan perbaikan...\n\nContoh:\n1. SK CPNS belum dilampirkan\n2. SK Pangkat Terakhir masih kurang jelas\n3. Surat Pengantar belum ditandatangani atasan'
+        : 'Masukkan alasan penolakan...\n\nContoh:\nDokumen persyaratan tidak lengkap dan tidak dapat diproses lebih lanjut.';
 
     const label = actionType === 'perbaiki'
         ? 'Keterangan Perbaikan'
@@ -63,20 +66,29 @@ export const ActionModal: React.FC<ActionModalProps> = ({
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative bg-white rounded-3xl max-w-md w-full shadow-2xl animate-fadeIn">
+            <div className={`relative bg-white rounded-3xl w-full shadow-2xl animate-fadeIn transition-all duration-300 ${isExpanded ? 'max-w-4xl' : 'max-w-md'}`}>
                 <div className={`bg-gradient-to-r ${bgGradient} text-white p-6 rounded-t-3xl`}>
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <IconComponent size={24} />
                             <h2 className="text-xl font-black">{title}</h2>
                         </div>
-                        <button
-                            onClick={onClose}
-                            disabled={isLoading}
-                            className="p-1 hover:bg-white/20 rounded-lg transition-colors disabled:opacity-50"
-                        >
-                            <X size={20} />
-                        </button>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setIsExpanded(!isExpanded)}
+                                className="p-1 hover:bg-white/20 rounded-lg transition-colors"
+                                title={isExpanded ? "Kecilkan" : "Perbesar"}
+                            >
+                                {isExpanded ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+                            </button>
+                            <button
+                                onClick={onClose}
+                                disabled={isLoading}
+                                className="p-1 hover:bg-white/20 rounded-lg transition-colors disabled:opacity-50"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -96,17 +108,22 @@ export const ActionModal: React.FC<ActionModalProps> = ({
                         <textarea
                             value={reason}
                             onChange={(e) => setReason(e.target.value)}
-                            className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none"
-                            rows={4}
+                            className={`w-full px-4 py-3 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-y ${isExpanded ? 'min-h-[300px]' : 'min-h-[150px]'}`}
+                            rows={isExpanded ? 12 : 6}
                             placeholder={placeholder}
                             required
                             disabled={isLoading}
                         />
-                        <p className="text-[10px] text-slate-400 mt-1">
-                            {actionType === 'perbaiki'
-                                ? 'Berikan penjelasan detail mengenai dokumen yang perlu diperbaiki'
-                                : 'Berikan alasan yang jelas mengapa pengajuan ini ditolak'}
-                        </p>
+                        <div className="flex justify-between items-center mt-2">
+                            <p className="text-[10px] text-slate-400">
+                                {actionType === 'perbaiki'
+                                    ? 'Berikan penjelasan detail mengenai dokumen yang perlu diperbaiki'
+                                    : 'Berikan alasan yang jelas mengapa pengajuan ini ditolak'}
+                            </p>
+                            <p className="text-[10px] text-slate-400">
+                                {reason.length} karakter
+                            </p>
+                        </div>
                     </div>
 
                     <div className="flex gap-3">

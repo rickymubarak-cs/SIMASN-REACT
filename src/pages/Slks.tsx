@@ -13,6 +13,8 @@ import { ActionModal } from '../components/modals/ActionModal';
 import { UploadModalSlks } from '../components/modals/Layanan/Admin/Slks/UploadModalSlks';
 import { SkeletonLoading } from '../components/common/SkeletonLoading';
 import { slksService } from '../service/slksService';
+import { Toaster } from 'react-hot-toast';
+import { showSuccess, showError } from '../components/common/Toast';
 
 type ViewMode = 'standard' | 'compact' | 'detailed' | 'table';
 
@@ -103,20 +105,20 @@ export default function Slks({ activeTab, onTabChange }: SlksProps) {
     const handlePerbaiki = async (id: string, keterangan: string) => {
         try {
             await slksService.updateStatus(id, 'perbaikan', keterangan);
+            showSuccess('Pengajuan berhasil dikembalikan untuk perbaikan');
             refreshData();
         } catch (err) {
-            console.error("Error updating status:", err);
-            alert("Gagal mengirim perbaikan");
+            showError("Gagal mengirim perbaikan");
         }
     };
 
     const handleTolak = async (id: string, alasan: string) => {
         try {
             await slksService.updateStatus(id, 'ditolak', alasan);
+            showSuccess('Pengajuan berhasil ditolak');
             refreshData();
         } catch (err) {
-            console.error("Error updating status:", err);
-            alert("Gagal menolak pengajuan");
+            showError("Gagal menolak pengajuan");
         }
     };
 
@@ -124,20 +126,38 @@ export default function Slks({ activeTab, onTabChange }: SlksProps) {
         try {
             const status = isTembusan ? 'selesai' : 'diterima';
             await slksService.updateStatus(id, status);
+            showSuccess('Pengajuan berhasil diterima');
             refreshData();
         } catch (err) {
-            console.error("Error updating status:", err);
-            alert("Gagal menerima pengajuan");
+            showError("Gagal menerima pengajuan");
         }
     };
+
+    // src/pages/Slks.tsx
 
     const handleUpload = async (id: string, file: File) => {
         try {
             await slksService.uploadBerkas(id, file);
-            refreshData();
+            showSuccess('Berkas berhasil diupload');
+            await refreshData(); // Pastikan data ter-refresh
+            // Tutup modal upload
+            setModalState(prev => ({ ...prev, upload: false }));
         } catch (err) {
             console.error("Error uploading file:", err);
-            alert("Gagal upload berkas");
+            showError("Gagal upload berkas");
+            throw err;
+        }
+    };
+
+    const handleEditBerkas = async (id: string, oldFile: string, newFile: File) => {
+        const loadingToast = toast.loading('Mengganti berkas...');
+        try {
+            await slksService.editBerkas(id, oldFile, newFile);
+            toast.success('Berkas berhasil diganti!', { id: loadingToast });
+            refreshData();
+        } catch (err) {
+            console.error("Error editing file:", err);
+            toast.error('Gagal mengganti berkas', { id: loadingToast });
             throw err;
         }
     };
@@ -352,6 +372,7 @@ export default function Slks({ activeTab, onTabChange }: SlksProps) {
 
     return (
         <div className="min-h-screen bg-[#F1F5F9]">
+            <Toaster position="top-right" />
             <Navbar
                 activeTab={activeTab}
                 onTabChange={handleLocalTabChange}
@@ -458,6 +479,15 @@ export default function Slks({ activeTab, onTabChange }: SlksProps) {
                 onClose={() => setModalState(prev => ({ ...prev, upload: false }))}
                 onSubmit={handleUpload}
                 data={selectedData}
+            />
+
+            <UploadModalSlks
+                isOpen={modalState.upload}
+                onClose={() => setModalState(prev => ({ ...prev, upload: false }))}
+                onSubmit={handleUpload}
+                onEdit={handleEditBerkas}  // Tambahkan ini
+                data={selectedData}
+                mode={selectedData?.file_status_pelayanan ? 'edit' : 'upload'}  // Tentukan mode
             />
         </div>
     );

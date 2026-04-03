@@ -5,6 +5,7 @@ import {
     Grid3X3, LayoutList, Table, ChevronRight
 } from 'lucide-react';
 import { SearchResult } from '../../types';
+import Kompetensi from '../../pages/Kompetensi';
 
 type ViewMode = 'standard' | 'compact' | 'detailed' | 'table';
 
@@ -231,6 +232,39 @@ export const DashboardSearchBar: React.FC<DashboardSearchBarProps> = ({
             inputPlaceholder: 'placeholder:text-slate-400',
             inputBorderColor: 'border-slate-200'
         },
+        kompetensi : {
+            button: 'bg-orange-600 hover:bg-orange-700 text-white',
+            inputBorder: 'focus:ring-orange-500/5',
+            resultHover: 'hover:bg-orange-50',
+            viewModeActive: 'bg-orange-600 text-white shadow-sm',
+            viewModeInactive: 'text-slate-400 hover:text-slate-700 hover:bg-white/50',
+            inputBg: 'bg-slate-50',
+            inputText: 'text-slate-900',
+            inputPlaceholder: 'placeholder:text-slate-400',
+            inputBorderColor: 'border-slate-200'
+        },
+        diklat : {
+            button: 'bg-sky-600 hover:bg-sky-700 text-white',
+            inputBorder: 'focus:ring-sky-500/5',
+            resultHover: 'hover:bg-sky-50',
+            viewModeActive: 'bg-sky-600 text-white shadow-sm',
+            viewModeInactive: 'text-slate-400 hover:text-slate-700 hover:bg-white/50',
+            inputBg: 'bg-slate-50',
+            inputText: 'text-slate-900',
+            inputPlaceholder: 'placeholder:text-slate-400',
+            inputBorderColor: 'border-slate-200'
+        },
+        data : {
+            button: 'bg-slate-600 hover:bg-slate-700 text-white',
+            inputBorder: 'focus:ring-slate-500/5',
+            resultHover: 'hover:bg-slate-50',
+            viewModeActive: 'bg-slate-600 text-white shadow-sm',
+            viewModeInactive: 'text-slate-400 hover:text-slate-700 hover:bg-white/50',
+            inputBg: 'bg-slate-50',
+            inputText: 'text-slate-900',
+            inputPlaceholder: 'placeholder:text-slate-400',
+            inputBorderColor: 'border-slate-200'
+        }
     };
 
     const currentVariant = variantClasses[variant] || variantClasses.default;

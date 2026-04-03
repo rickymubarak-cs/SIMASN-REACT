@@ -1,10 +1,11 @@
+// src/components/cards/DataCardDataPerubahan.tsx
 import React from 'react';
-import { User, Clock, Eye, Edit, Ban, CheckCircle, Upload, GraduationCap, FileCheck } from 'lucide-react';
-import { StatusBadge } from '../common/StatusBadge';
-import { formatDateTimeId } from '../../utils/formatters';
-import { diklatFileConfig } from '../../service/diklatService';
+import { Database, Clock, Eye, Edit, Ban, CheckCircle, Upload, FileCheck, Building } from 'lucide-react';
+import { StatusBadge } from '../../../../common/StatusBadge';
+import { formatDateTimeId } from '../../../../../utils/formatters';
+import { dataFileConfig } from '../../../../../service/dataService';
 
-interface DataCardDiklatProps {
+interface DataCardDataPerubahanProps {
     data: any;
     index: number;
     onDetail: () => void;
@@ -14,7 +15,7 @@ interface DataCardDiklatProps {
     onUpload?: () => void;
 }
 
-export const DataCardDiklat: React.FC<DataCardDiklatProps> = ({
+export const DataCardDataPerubahan: React.FC<DataCardDataPerubahanProps> = ({
     data,
     index,
     onDetail,
@@ -23,12 +24,12 @@ export const DataCardDiklat: React.FC<DataCardDiklatProps> = ({
     onTerima,
     onUpload
 }) => {
-    const status = data.layanan_diklat_status || "pengajuan";
+    const status = data.layanan_data_status || "pengajuan";
     const namaLengkap = `${data.peg_gelar_depan || ""} ${data.peg_nama || ""} ${data.peg_gelar_belakang || ""}`.trim();
-    const namaUsulan = data.nama_usulan_diklat || "-";
+    const jenisLayanan = data.jenis_layanan_data || "-";
+    const unitKerja = data.unit_org_induk_nm || "-";
 
-    // Hitung jumlah file yang tersedia
-    const availableFiles = diklatFileConfig.filter(
+    const availableFiles = dataFileConfig.filter(
         fileConfig => data[fileConfig.key] && data[fileConfig.key].trim() !== ""
     ).length;
 
@@ -36,18 +37,18 @@ export const DataCardDiklat: React.FC<DataCardDiklatProps> = ({
         <div className="bg-white rounded-[3rem] border border-slate-200/60 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all group flex flex-col overflow-hidden relative">
             <div className="p-6 flex-1">
                 <div className="flex justify-between items-start mb-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-violet-600 text-white rounded-2xl flex items-center justify-center group-hover:scale-110 transition-all duration-500 shadow-lg shadow-violet-200">
-                        <GraduationCap size={20} />
+                    <div className="w-12 h-12 bg-gradient-to-br from-slate-500 to-slate-600 text-white rounded-2xl flex items-center justify-center group-hover:scale-110 transition-all duration-500 shadow-lg shadow-slate-200">
+                        <Database size={20} />
                     </div>
                     <div className="flex flex-col items-end gap-1">
-                        <span className="text-[9px] font-black text-violet-600 bg-violet-50 px-3 py-1.5 rounded-full uppercase">
+                        <span className="text-[9px] font-black text-slate-600 bg-slate-50 px-3 py-1.5 rounded-full uppercase">
                             #{index}
                         </span>
                         <StatusBadge status={status} />
                     </div>
                 </div>
 
-                <h3 className="font-black text-slate-800 text-sm leading-tight mb-1 line-clamp-2 uppercase group-hover:text-violet-600 transition-colors">
+                <h3 className="font-black text-slate-800 text-sm leading-tight mb-1 line-clamp-2 uppercase group-hover:text-slate-600 transition-colors">
                     {namaLengkap || "Tanpa Nama"}
                 </h3>
 
@@ -55,33 +56,43 @@ export const DataCardDiklat: React.FC<DataCardDiklatProps> = ({
                     NIP. {data.peg_nip || "-"}
                 </p>
 
-                <div className="mb-2">
-                    <p className="text-[9px] text-violet-600 bg-violet-50 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
-                        <GraduationCap size={10} />
-                        Usulan Diklat
-                    </p>
-                    <p className="text-[10px] text-slate-600 mt-1 line-clamp-2">
-                        {namaUsulan.slice(0, 80)}{namaUsulan.length > 80 ? '...' : ''}
-                    </p>
+                <div className="mb-3">
+                    <div className="flex items-start gap-1.5">
+                        <Building size={10} className="text-slate-400 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                            <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">
+                                Unit Kerja
+                            </p>
+                            <p className="text-[10px] font-medium text-slate-700 leading-tight line-clamp-2" title={unitKerja}>
+                                {unitKerja}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex flex-wrap gap-1 mb-2">
+                    <span className="text-[9px] text-slate-600 bg-slate-50 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                        <Database size={10} />
+                        {jenisLayanan}
+                    </span>
                 </div>
 
                 <p className="text-[9px] text-slate-500 bg-slate-50 px-2 py-1 rounded-full inline-flex items-center gap-1 mb-3">
                     <FileCheck size={10} />
-                    {availableFiles} dari {diklatFileConfig.length} Berkas tersedia
+                    {availableFiles} dari {dataFileConfig.length} Berkas tersedia
                 </p>
 
                 <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-100 text-[9px] font-black text-slate-400 uppercase">
                     <Clock size={10} />
-                    <span>{formatDateTimeId(data.timestamp || data.tgl_usul)}</span>
+                    <span>{formatDateTimeId(data.timestamp)}</span>
                 </div>
             </div>
 
-            {/* Action Buttons */}
             <div className="bg-slate-50/50 p-4 space-y-2 border-t border-slate-100">
                 <div className="flex gap-1.5 flex-wrap">
                     <button
                         onClick={onDetail}
-                        className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl text-[9px] font-bold bg-white border border-violet-200 text-violet-600 hover:bg-violet-600 hover:text-white hover:border-violet-600 transition-all"
+                        className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl text-[9px] font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-600 hover:text-white hover:border-slate-600 transition-all"
                     >
                         <Eye size={12} /> Detail
                     </button>
@@ -103,7 +114,7 @@ export const DataCardDiklat: React.FC<DataCardDiklatProps> = ({
                             </button>
 
                             <button
-                                onClick={() => onTerima?.(data.layanan_diklat_id, false)}
+                                onClick={() => onTerima?.(data.layanan_data_id, false)}
                                 className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl text-[9px] font-bold bg-white border border-green-200 text-green-600 hover:bg-green-600 hover:text-white transition-all"
                             >
                                 <CheckCircle size={12} /> Terima
@@ -114,22 +125,26 @@ export const DataCardDiklat: React.FC<DataCardDiklatProps> = ({
                     {status === "diterima" && (
                         <button
                             onClick={onUpload}
-                            className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl text-[9px] font-bold bg-white border border-emerald-200 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all"
+                            className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl text-[9px] font-bold bg-white border border-slate-200 text-slate-600 hover:bg-slate-600 hover:text-white transition-all"
                         >
                             <Upload size={12} /> Upload
                         </button>
                     )}
                 </div>
 
-                {/* File indicators */}
                 <div className="flex gap-1 pt-1 flex-wrap">
-                    {diklatFileConfig.map(fileConfig => (
+                    {dataFileConfig.slice(0, 4).map(fileConfig => (
                         data[fileConfig.key] && data[fileConfig.key].trim() !== "" && (
-                            <span key={fileConfig.key} className="text-[8px] px-2 py-0.5 rounded-full bg-violet-50 text-violet-600">
-                                ✓ {fileConfig.label}
+                            <span key={fileConfig.key} className="text-[8px] px-2 py-0.5 rounded-full bg-slate-50 text-slate-600">
+                                ✓ {fileConfig.label.slice(0, 12)}
                             </span>
                         )
                     ))}
+                    {availableFiles > 4 && (
+                        <span className="text-[8px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">
+                            +{availableFiles - 4} lainnya
+                        </span>
+                    )}
                 </div>
             </div>
         </div>

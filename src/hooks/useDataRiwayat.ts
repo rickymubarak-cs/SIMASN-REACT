@@ -1,9 +1,9 @@
-// src/hooks/useDataRiwayat.ts
+// src/hooks/useDataPerubahanData.ts
 import { useState, useEffect, useCallback } from 'react';
-import { dataService, DataRiwayat } from '../service/dataService';
+import { dataService, DataPerubahanData } from '../service/dataService';
 
-interface UseDataRiwayatReturn {
-    data: DataRiwayat[];
+interface UseDataPerubahanDataReturn {
+    data: DataPerubahanData[];
     loading: boolean;
     error: string | null;
     perangkatDaerah: string;
@@ -11,8 +11,8 @@ interface UseDataRiwayatReturn {
     refreshData: () => Promise<void>;
 }
 
-export const useDataRiwayat = (): UseDataRiwayatReturn => {
-    const [data, setData] = useState<DataRiwayat[]>([]);
+export const useDataPerubahanData = (): UseDataPerubahanDataReturn => {
+    const [data, setData] = useState<DataPerubahanData[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [perangkatDaerah, setPerangkatDaerah] = useState<string>("");
@@ -24,8 +24,8 @@ export const useDataRiwayat = (): UseDataRiwayatReturn => {
             const result = await dataService.getAll(perangkatDaerah);
             setData(result);
         } catch (err: any) {
-            console.error('useDataRiwayat - Error:', err);
-            setError(err.message || "Gagal memuat data Riwayat Data. Periksa koneksi VPN atau jaringan Anda.");
+            console.error('useDataPerubahanData - Error:', err);
+            setError(err.message || "Gagal memuat data Perubahan Data. Periksa koneksi VPN atau jaringan Anda.");
         } finally {
             setLoading(false);
         }
@@ -45,4 +45,4 @@ export const useDataRiwayat = (): UseDataRiwayatReturn => {
     };
 };
 
-export default useDataRiwayat;
+export default useDataPerubahanData;
