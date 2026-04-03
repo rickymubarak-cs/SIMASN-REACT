@@ -4,13 +4,13 @@ import { AlertCircle, Award } from 'lucide-react';
 import { useSlksData } from '../hooks/useSlksData';
 import { Navbar } from '../components/layout/Navbar';
 import { DashboardSearchBar } from '../components/layout/DashboardSearchBar';
-import { DataCardSlks } from '../components/cards/DataCardSlks';
-import { DataCardSlksCompact } from '../components/cards/DataCardSlksCompact';
-import { DataCardSlksDetailed } from '../components/cards/DataCardSlksDetailed';
+import { DataCardSlks } from '../components/cards/Pelayanan/Admin/Slks/DataCardSlks';
+import { DataCardSlksCompact } from '../components/cards/Pelayanan/Admin/Slks/DataCardSlksCompact';
+import { DataCardSlksDetailed } from '../components/cards/Pelayanan/Admin/Slks/DataCardSlksDetailed';
 import { DataTableSlks } from '../components/tables/DataTableSlks';
-import { DetailModalSlks } from '../components/modals/DetailModalSlks';
+import { DetailModalSlks } from '../components/modals/Layanan/Admin/Slks/DetailModalSlks';
 import { ActionModal } from '../components/modals/ActionModal';
-import { UploadModalSlks } from '../components/modals/UploadModalSlks';
+import { UploadModalSlks } from '../components/modals/Layanan/Admin/Slks/UploadModalSlks';
 import { SkeletonLoading } from '../components/common/SkeletonLoading';
 import { slksService } from '../service/slksService';
 

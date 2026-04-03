@@ -25,7 +25,7 @@ export const useGajiData = (): UseGajiDataReturn => {
             setData(result);
         } catch (err: any) {
             console.error('useGajiData - Error:', err);
-            setError(err.message || "Gagal memuat data Kenaikan Gaji Berkala. Periksa koneksi VPN atau jaringan Anda.");
+            setError(err.message || "Gagal memuat data Gaji Berkala. Periksa koneksi VPN atau jaringan Anda.");
         } finally {
             setLoading(false);
         }

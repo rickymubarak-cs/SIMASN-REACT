@@ -1,24 +1,20 @@
 // src/pages/Pemberhentian.tsx
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { AlertCircle, UserMinus, Settings2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { AlertCircle, UserX } from 'lucide-react';
 import { usePemberhentianData } from '../hooks/usePemberhentianData';
 import { Navbar } from '../components/layout/Navbar';
 import { DashboardSearchBar } from '../components/layout/DashboardSearchBar';
-import { SearchBar } from '../components/common/SearchBar';
+import { DataCardPemberhentian } from '../components/cards/Pelayanan/Admin/Pemberhentian/DataCardPemberhentian';
+import { DataCardPemberhentianCompact } from '../components/cards/Pelayanan/Admin/Pemberhentian/DataCardPemberhentianCompact';
+import { DataCardPemberhentianDetailed } from '../components/cards/Pelayanan/Admin/Pemberhentian/DataCardPemberhentianDetailed';
+import { DataTablePemberhentian } from '../components/tables/DataTablePemberhentian';
+import { DetailModalPemberhentian } from '../components/modals/Layanan/Admin/Pemberhentian/DetailModalPemberhentian';
+import { ActionModal } from '../components/modals/ActionModal';
+import { UploadModalPemberhentian } from '../components/modals/Layanan/Admin/Pemberhentian/UploadModalPemberhentian';
 import { SkeletonLoading } from '../components/common/SkeletonLoading';
 import { pemberhentianService } from '../service/pemberhentianService';
 
-// Import komponen untuk berbagai mode tampilan
-import { ViewModeSelector, ViewMode } from '../components/common/ViewModeSelector';
-import { StandardCard } from '../components/cards/StandardCard';
-import { CompactCard } from '../components/cards/CompactCard';
-import { DetailedListItem } from '../components/cards/DetailedListItem';
-import { DataTableView } from '../components/tables/DataTableView';
-
-// Import modals
-import { DetailModalPemberhentian } from '../components/modals/DetailModalPemberhentian';
-import { ActionModal } from '../components/modals/ActionModal';
-import { UploadModalPemberhentian } from '../components/modals/UploadModalPemberhentian';
+type ViewMode = 'standard' | 'compact' | 'detailed' | 'table';
 
 interface PemberhentianProps {
     activeTab: string;
@@ -26,466 +22,156 @@ interface PemberhentianProps {
 }
 
 export default function Pemberhentian({ activeTab, onTabChange }: PemberhentianProps) {
-    // State untuk view mode
-    const [viewMode, setViewMode] = useState<ViewMode>(() => {
-        const saved = localStorage.getItem('pemberhentian_view_mode');
-        return (saved as ViewMode) || 'standard';
-    });
-
-    // State untuk pencarian dan pagination
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
-    const [selectedData, setSelectedData] = useState<any>(null);
+    const [selectedData, setSelectedData] = useState(null);
+    const [viewMode, setViewMode] = useState<ViewMode>('standard');
+    const [unitKerjaName, setUnitKerjaName] = useState("");
     const [modalState, setModalState] = useState({
         detail: false,
         perbaiki: false,
         tolak: false,
         upload: false
     });
-    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const { data, loading, error, perangkatDaerah, setPerangkatDaerah, refreshData } = usePemberhentianData();
+    const { data, loading, error, refreshData } = usePemberhentianData();
 
-    // Tentukan items per page berdasarkan view mode
-    const getItemsPerPage = useCallback(() => {
+    const getItemsPerPage = () => {
         switch (viewMode) {
-            case 'compact': return 24;
-            case 'list': return 10;
-            case 'table': return 15;
+            case 'compact': return 12;
+            case 'detailed': return 6;
+            case 'table': return 10;
             default: return 8;
         }
-    }, [viewMode]);
+    };
 
     const itemsPerPage = getItemsPerPage();
 
-    // Optimasi filtering dengan useMemo
-    const filteredData = useMemo(() => {
-        if (!searchTerm.trim()) return data;
+    const filteredData = data.filter(item => {
+        const namaLengkap = `${item.peg_gelar_depan || ""} ${item.peg_nama || ""} ${item.peg_gelar_belakang || ""}`.trim();
+        const nipStr = item.peg_nip ? String(item.peg_nip) : "";
+        const unitKerja = item.unit_org_induk_nm || "";
+        const searchLower = searchTerm.toLowerCase();
 
-        return data.filter(item => {
-            const namaLengkap = [
-                item.peg_gelar_depan || "",
-                item.peg_nama || "",
-                item.peg_gelar_belakang || ""
-            ].filter(Boolean).join(" ").trim();
-
-            const searchLower = searchTerm.toLowerCase();
-            return (
-                namaLengkap.toLowerCase().includes(searchLower) ||
-                (item.peg_nip || "").includes(searchTerm)
-            );
-        });
-    }, [data, searchTerm]);
-
-    // Optimasi pagination dengan useMemo
-    const paginatedData = useMemo(() => {
-        if (viewMode === 'table') return filteredData; // Table menggunakan filtering internal
-        return filteredData.slice(
-            (currentPage - 1) * itemsPerPage,
-            currentPage * itemsPerPage
+        return (
+            namaLengkap.toLowerCase().includes(searchLower) ||
+            nipStr.includes(searchTerm) ||
+            unitKerja.toLowerCase().includes(searchLower)
         );
-    }, [filteredData, currentPage, itemsPerPage, viewMode]);
+    });
 
+    const paginatedData = filteredData.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
     const totalPages = Math.ceil(filteredData.length / itemsPerPage);
 
-    // Save view mode preference
-    const handleViewModeChange = useCallback((mode: ViewMode) => {
-        setViewMode(mode);
-        localStorage.setItem('pemberhentian_view_mode', mode);
-        setCurrentPage(1); // Reset ke halaman pertama saat ganti mode
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [viewMode, searchTerm]);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.ctrlKey) {
+                switch (e.key) {
+                    case '1': setViewMode('standard'); e.preventDefault(); break;
+                    case '2': setViewMode('compact'); e.preventDefault(); break;
+                    case '3': setViewMode('detailed'); e.preventDefault(); break;
+                    case '4': setViewMode('table'); e.preventDefault(); break;
+                }
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
     }, []);
 
-    // Handler untuk aksi
-    const handlePerbaiki = useCallback(async (id: string, keterangan: string) => {
-        setIsSubmitting(true);
+    const handlePerbaiki = async (id: string, keterangan: string) => {
         try {
             await pemberhentianService.updateStatus(id, 'perbaikan', keterangan);
-            await refreshData();
-        } catch (err: any) {
-            console.error("Error updating status:", err);
-            alert(err.message || "Gagal mengirim perbaikan");
-        } finally {
-            setIsSubmitting(false);
-        }
-    }, [refreshData]);
+            refreshData();
+        } catch (err) { console.error(err); alert("Gagal mengirim perbaikan"); }
+    };
 
-    const handleTolak = useCallback(async (id: string, alasan: string) => {
-        setIsSubmitting(true);
+    const handleTolak = async (id: string, alasan: string) => {
         try {
             await pemberhentianService.updateStatus(id, 'ditolak', alasan);
-            await refreshData();
-        } catch (err: any) {
-            console.error("Error updating status:", err);
-            alert(err.message || "Gagal menolak pengajuan");
-        } finally {
-            setIsSubmitting(false);
-        }
-    }, [refreshData]);
+            refreshData();
+        } catch (err) { console.error(err); alert("Gagal menolak pengajuan"); }
+    };
 
-    const handleTerima = useCallback(async (id: string, isTembusan: boolean) => {
-        setIsSubmitting(true);
+    const handleTerima = async (id: string, isTembusan: boolean) => {
         try {
-            const status = isTembusan ? 'selesai' : 'diterima';
-            await pemberhentianService.updateStatus(id, status);
-            await refreshData();
-        } catch (err: any) {
-            console.error("Error updating status:", err);
-            alert(err.message || "Gagal menerima pengajuan");
-        } finally {
-            setIsSubmitting(false);
-        }
-    }, [refreshData]);
+            await pemberhentianService.updateStatus(id, isTembusan ? 'selesai' : 'diterima');
+            refreshData();
+        } catch (err) { console.error(err); alert("Gagal menerima pengajuan"); }
+    };
 
-    const handleUpload = useCallback(async (id: string, file: File) => {
-        setIsSubmitting(true);
+    const handleUpload = async (id: string, file: File) => {
         try {
             await pemberhentianService.uploadBerkas(id, file);
-            await refreshData();
-        } catch (err: any) {
-            console.error("Error uploading file:", err);
-            alert(err.message || "Gagal upload berkas");
-            throw err;
-        } finally {
-            setIsSubmitting(false);
-        }
-    }, [refreshData]);
+            refreshData();
+        } catch (err) { console.error(err); alert("Gagal upload berkas"); throw err; }
+    };
 
-    const handleLocalTabChange = useCallback((tab: string) => {
+    const handleLocalTabChange = (tab: string) => {
         onTabChange(tab);
-    }, [onTabChange]);
-
-    const handleLogout = useCallback(() => {
-        console.log("Logout clicked");
-    }, []);
-
-    const handleSearch = useCallback(() => {
+        setSearchTerm("");
         setCurrentPage(1);
-        refreshData();
-    }, [refreshData]);
+    };
 
-    // Render konten berdasarkan view mode
+    const handleLogout = () => console.log("Logout clicked");
+
     const renderContent = () => {
         if (loading) {
-            const skeletonCount = viewMode === 'compact' ? 12 : viewMode === 'list' ? 5 : viewMode === 'table' ? 5 : 8;
-            return <SkeletonLoading count={skeletonCount} />;
+            const skeletonCount = getItemsPerPage();
+            let skeletonGridClass = '';
+            switch (viewMode) {
+                case 'compact': skeletonGridClass = 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4'; break;
+                case 'detailed': skeletonGridClass = 'grid-cols-1 lg:grid-cols-2 gap-6'; break;
+                case 'table': return <SkeletonLoading count={skeletonCount} className="bg-white rounded-2xl" />;
+                default: skeletonGridClass = 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8';
+            }
+            return <div className={`grid ${skeletonGridClass}`}>{[...Array(skeletonCount)].map((_, i) => <div key={i} className="bg-white rounded-2xl border border-slate-200 animate-pulse"><div className="p-6 space-y-4"><div className="flex justify-between items-start"><div className="w-12 h-12 bg-slate-200 rounded-2xl"></div><div className="w-16 h-6 bg-slate-200 rounded-full"></div></div><div className="space-y-2"><div className="h-5 bg-slate-200 rounded w-3/4"></div><div className="h-3 bg-slate-200 rounded w-1/2"></div></div><div className="pt-4 border-t border-slate-100"><div className="h-8 bg-slate-200 rounded-xl"></div></div></div></div>)}</div>;
         }
 
         if (error) {
-            return (
-                <div className="text-center py-20 bg-white rounded-3xl shadow-sm">
-                    <div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <AlertCircle size={40} className="text-rose-500" />
-                    </div>
-                    <h3 className="text-xl font-black text-rose-800 mb-2">Terjadi Gangguan</h3>
-                    <p className="text-rose-600 text-sm mb-6">{error}</p>
-                    <button
-                        onClick={refreshData}
-                        disabled={isSubmitting}
-                        className="px-6 py-3 bg-rose-500 text-white rounded-xl font-bold hover:bg-rose-600 transition-colors disabled:opacity-50"
-                    >
-                        {isSubmitting ? 'Memuat...' : 'Coba Lagi'}
-                    </button>
-                </div>
-            );
+            return <div className="text-center py-20 bg-white rounded-3xl shadow-sm"><div className="w-20 h-20 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-6"><AlertCircle size={40} className="text-rose-500" /></div><h3 className="text-xl font-black text-rose-800 mb-2">Terjadi Gangguan</h3><p className="text-rose-600 text-sm mb-6">{error}</p><button onClick={refreshData} className="px-6 py-3 bg-rose-500 text-white rounded-xl font-bold hover:bg-rose-600">Coba Lagi</button></div>;
         }
 
-        if (filteredData.length === 0) {
-            return (
-                <div className="text-center py-20 bg-white rounded-3xl shadow-sm">
-                    <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-8">
-                        <UserMinus size={40} className="text-slate-300" />
-                    </div>
-                    <h3 className="text-2xl font-black text-slate-800 uppercase tracking-tight">Belum Ada Data Pemberhentian ASN</h3>
-                    <p className="text-slate-500 text-sm mt-2 max-w-md mx-auto">
-                        Saat ini belum terdapat pengajuan pemberhentian ASN
-                        {perangkatDaerah ? ` untuk unit kerja dengan ID ${perangkatDaerah}` : ''}.
-                    </p>
-                    <button
-                        onClick={refreshData}
-                        disabled={isSubmitting}
-                        className="mt-6 px-6 py-2 bg-rose-500 text-white rounded-xl text-sm font-bold hover:bg-rose-600 transition-colors disabled:opacity-50"
-                    >
-                        {isSubmitting ? 'Memuat...' : 'Refresh Data'}
-                    </button>
-                </div>
-            );
+        if (paginatedData.length === 0) {
+            return <div className="text-center py-20 bg-white rounded-3xl shadow-sm"><div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-8"><UserX size={40} className="text-slate-300" /></div><h3 className="text-2xl font-black text-slate-800 uppercase tracking-tight">Belum Ada Usulan Pemberhentian ASN</h3><p className="text-slate-500 text-sm mt-2">Saat ini belum terdapat pengajuan usulan Pemberhentian ASN{unitKerjaName ? ` untuk unit kerja ${unitKerjaName}` : ''}.</p><button onClick={refreshData} className="mt-6 px-6 py-2 bg-rose-500 text-white rounded-xl text-sm font-bold hover:bg-rose-600">Refresh Data</button></div>;
         }
 
         switch (viewMode) {
             case 'compact':
-                return (
-                    <>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-                            {paginatedData.map((item, idx) => (
-                                <CompactCard
-                                    key={item.layanan_pemberhentian_id || idx}
-                                    data={item}
-                                    index={idx + 1 + (currentPage - 1) * itemsPerPage}
-                                    onDetail={() => {
-                                        setSelectedData(item);
-                                        setModalState(prev => ({ ...prev, detail: true }));
-                                    }}
-                                    onPerbaiki={() => {
-                                        setSelectedData(item);
-                                        setModalState(prev => ({ ...prev, perbaiki: true }));
-                                    }}
-                                    onTolak={() => {
-                                        setSelectedData(item);
-                                        setModalState(prev => ({ ...prev, tolak: true }));
-                                    }}
-                                    onTerima={handleTerima}
-                                    onUpload={() => {
-                                        setSelectedData(item);
-                                        setModalState(prev => ({ ...prev, upload: true }));
-                                    }}
-                                />
-                            ))}
-                        </div>
-                    </>
-                );
-
-            case 'list':
-                return (
-                    <div className="space-y-3">
-                        {paginatedData.map((item, idx) => (
-                            <DetailedListItem
-                                key={item.layanan_pemberhentian_id || idx}
-                                data={item}
-                                index={idx + 1 + (currentPage - 1) * itemsPerPage}
-                                onDetail={() => {
-                                    setSelectedData(item);
-                                    setModalState(prev => ({ ...prev, detail: true }));
-                                }}
-                                onPerbaiki={() => {
-                                    setSelectedData(item);
-                                    setModalState(prev => ({ ...prev, perbaiki: true }));
-                                }}
-                                onTolak={() => {
-                                    setSelectedData(item);
-                                    setModalState(prev => ({ ...prev, tolak: true }));
-                                }}
-                                onTerima={handleTerima}
-                                onUpload={() => {
-                                    setSelectedData(item);
-                                    setModalState(prev => ({ ...prev, upload: true }));
-                                }}
-                            />
-                        ))}
-                    </div>
-                );
-
+                return <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4">{paginatedData.map((item, idx) => <DataCardPemberhentianCompact key={idx} data={item} index={idx + 1 + (currentPage - 1) * itemsPerPage} onDetail={() => { setSelectedData(item); setModalState(prev => ({ ...prev, detail: true })); }} onPerbaiki={() => { setSelectedData(item); setModalState(prev => ({ ...prev, perbaiki: true })); }} onTolak={() => { setSelectedData(item); setModalState(prev => ({ ...prev, tolak: true })); }} onTerima={handleTerima} onUpload={() => { setSelectedData(item); setModalState(prev => ({ ...prev, upload: true })); }} />)}</div>;
+            case 'detailed':
+                return <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">{paginatedData.map((item, idx) => <DataCardPemberhentianDetailed key={idx} data={item} index={idx + 1 + (currentPage - 1) * itemsPerPage} onDetail={() => { setSelectedData(item); setModalState(prev => ({ ...prev, detail: true })); }} onPerbaiki={() => { setSelectedData(item); setModalState(prev => ({ ...prev, perbaiki: true })); }} onTolak={() => { setSelectedData(item); setModalState(prev => ({ ...prev, tolak: true })); }} onTerima={handleTerima} onUpload={() => { setSelectedData(item); setModalState(prev => ({ ...prev, upload: true })); }} />)}</div>;
             case 'table':
-                return (
-                    <DataTableView
-                        data={filteredData}
-                        onDetail={(item) => {
-                            setSelectedData(item);
-                            setModalState(prev => ({ ...prev, detail: true }));
-                        }}
-                        onPerbaiki={(id) => {
-                            const item = data.find(d => d.layanan_pemberhentian_id === id);
-                            if (item) {
-                                setSelectedData(item);
-                                setModalState(prev => ({ ...prev, perbaiki: true }));
-                            }
-                        }}
-                        onTolak={(id) => {
-                            const item = data.find(d => d.layanan_pemberhentian_id === id);
-                            if (item) {
-                                setSelectedData(item);
-                                setModalState(prev => ({ ...prev, tolak: true }));
-                            }
-                        }}
-                        onTerima={handleTerima}
-                        onUpload={(id) => {
-                            const item = data.find(d => d.layanan_pemberhentian_id === id);
-                            if (item) {
-                                setSelectedData(item);
-                                setModalState(prev => ({ ...prev, upload: true }));
-                            }
-                        }}
-                        isLoading={loading}
-                    />
-                );
-
-            default: // standard
-                return (
-                    <>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                            {paginatedData.map((item, idx) => (
-                                <StandardCard
-                                    key={item.layanan_pemberhentian_id || idx}
-                                    data={item}
-                                    index={idx + 1 + (currentPage - 1) * itemsPerPage}
-                                    onDetail={() => {
-                                        setSelectedData(item);
-                                        setModalState(prev => ({ ...prev, detail: true }));
-                                    }}
-                                    onPerbaiki={() => {
-                                        setSelectedData(item);
-                                        setModalState(prev => ({ ...prev, perbaiki: true }));
-                                    }}
-                                    onTolak={() => {
-                                        setSelectedData(item);
-                                        setModalState(prev => ({ ...prev, tolak: true }));
-                                    }}
-                                    onTerima={handleTerima}
-                                    onUpload={() => {
-                                        setSelectedData(item);
-                                        setModalState(prev => ({ ...prev, upload: true }));
-                                    }}
-                                />
-                            ))}
-                        </div>
-                    </>
-                );
+                return <DataTablePemberhentian data={paginatedData} startIndex={(currentPage - 1) * itemsPerPage} onDetail={(item) => { setSelectedData(item); setModalState(prev => ({ ...prev, detail: true })); }} onPerbaiki={(item) => { setSelectedData(item); setModalState(prev => ({ ...prev, perbaiki: true })); }} onTolak={(item) => { setSelectedData(item); setModalState(prev => ({ ...prev, tolak: true })); }} onTerima={handleTerima} onUpload={(item) => { setSelectedData(item); setModalState(prev => ({ ...prev, upload: true })); }} />;
+            default:
+                return <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">{paginatedData.map((item, idx) => <DataCardPemberhentian key={idx} data={item} index={idx + 1 + (currentPage - 1) * itemsPerPage} onDetail={() => { setSelectedData(item); setModalState(prev => ({ ...prev, detail: true })); }} onPerbaiki={() => { setSelectedData(item); setModalState(prev => ({ ...prev, perbaiki: true })); }} onTolak={() => { setSelectedData(item); setModalState(prev => ({ ...prev, tolak: true })); }} onTerima={handleTerima} onUpload={() => { setSelectedData(item); setModalState(prev => ({ ...prev, upload: true })); }} />)}</div>;
         }
     };
 
     return (
         <div className="min-h-screen bg-[#F1F5F9]">
-            <Navbar
-                activeTab={activeTab}
-                onTabChange={handleLocalTabChange}
-                userName="Administrator"
-                userRole="BKPSDM Kota Pontianak"
-                onLogout={handleLogout}
-            />
-
+            <Navbar activeTab={activeTab} onTabChange={handleLocalTabChange} userName="Administrator" userRole="BKPSDM Kota Pontianak" onLogout={handleLogout} />
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-                {/* Welcome Section dengan View Mode Selector */}
                 <div className="bg-gradient-to-r from-rose-600 to-rose-700 rounded-3xl p-6 text-white">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                        <div>
-                            <h1 className="text-2xl font-black mb-1">
-                                Pemberhentian ASN
-                            </h1>
-                            <p className="text-rose-100 text-sm">
-                                Kelola dan pantau pengajuan pemberhentian ASN (pensiun, meninggal dunia, dll)
-                            </p>
-                        </div>
-                        <ViewModeSelector
-                            currentMode={viewMode}
-                            onModeChange={handleViewModeChange}
-                        />
+                    <div className="mb-4">
+                        <h1 className="text-2xl font-black mb-1">Pemberhentian ASN</h1>
+                        <p className="text-rose-100 text-sm">Kelola dan pantau pengajuan usulan Pemberhentian ASN</p>
                     </div>
+                    <DashboardSearchBar searchTerm={searchTerm} onSearchChange={(value) => { setSearchTerm(value); setCurrentPage(1); }} onSearch={() => setCurrentPage(1)} loading={loading} perangkatDaerah={unitKerjaName} onPerangkatDaerahChange={setUnitKerjaName} showUnitFilter={true} onFilter={refreshData} viewMode={viewMode} onViewModeChange={(mode) => { setViewMode(mode); setCurrentPage(1); }} itemCount={filteredData.length} variant="pemberhentian" placeholder="Cari berdasarkan NIP atau Nama Pegawai..." buttonText="Cari" />
                 </div>
-
-                {/* Dashboard Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <DashboardSearchBar
-                        label="Total Berkas"
-                        value={data.length}
-                        icon="Database"
-                        color="rose"
-                    />
-                    <DashboardSearchBar
-                        label="Unit Kerja"
-                        value={perangkatDaerah || 'Semua'}
-                        icon="MapPin"
-                        color="orange"
-                    />
-                    <DashboardSearchBar
-                        label="Status Sistem"
-                        value="Online"
-                        icon="RefreshCcw"
-                        color="emerald"
-                    />
-                    <DashboardSearchBar
-                        label="Jam Server"
-                        value={new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        icon="Clock"
-                        color="purple"
-                    />
-                </div>
-
-                {/* Search & Filter */}
-                <SearchBar
-                    searchTerm={searchTerm}
-                    onSearchChange={(value) => {
-                        setSearchTerm(value);
-                        setCurrentPage(1);
-                    }}
-                    onSearch={handleSearch}
-                    perangkatDaerah={perangkatDaerah}
-                    onPerangkatDaerahChange={setPerangkatDaerah}
-                    onFilter={refreshData}
-                    loading={loading || isSubmitting}
-                    showUnitFilter={true}
-                />
-
-                {/* Data Content */}
                 {renderContent()}
-
-                {/* Pagination - hanya untuk mode yang tidak menggunakan internal pagination di table */}
-                {totalPages > 1 && viewMode !== 'table' && (
-                    <div className="flex justify-center mt-12">
-                        <div className="flex items-center gap-2 bg-white p-2 rounded-2xl shadow-sm border border-slate-200">
-                            <button
-                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                                disabled={currentPage === 1 || isSubmitting}
-                                className="px-4 py-2 rounded-xl text-sm font-bold disabled:opacity-40 hover:bg-slate-100 transition-colors"
-                            >
-                                Sebelumnya
-                            </button>
-                            <div className="px-4">
-                                <span className="text-sm font-bold text-slate-800">{currentPage}</span>
-                                <span className="text-slate-400"> / </span>
-                                <span className="text-sm text-slate-600">{totalPages}</span>
-                            </div>
-                            <button
-                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                                disabled={currentPage === totalPages || isSubmitting}
-                                className="px-4 py-2 rounded-xl text-sm font-bold disabled:opacity-40 hover:bg-slate-100 transition-colors"
-                            >
-                                Selanjutnya
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                {/* Info jumlah data untuk mode table */}
-                {viewMode === 'table' && filteredData.length > 0 && (
-                    <div className="text-center text-xs text-slate-500">
-                        Menampilkan {filteredData.length} dari {data.length} data
-                    </div>
-                )}
+                {!loading && !error && paginatedData.length > 0 && totalPages > 1 && (<div className="flex justify-center mt-12"><div className="flex items-center gap-2 bg-white p-2 rounded-2xl shadow-sm border border-slate-200"><button onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1} className="px-4 py-2 rounded-xl text-sm font-bold disabled:opacity-40 hover:bg-slate-100">Sebelumnya</button><div className="px-4"><span className="text-sm font-bold text-slate-800">{currentPage}</span><span className="text-slate-400"> / </span><span className="text-sm text-slate-600">{totalPages}</span></div><button onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages} className="px-4 py-2 rounded-xl text-sm font-bold disabled:opacity-40 hover:bg-slate-100">Selanjutnya</button></div></div>)}
             </main>
-
-            {/* Modals */}
-            <DetailModalPemberhentian
-                isOpen={modalState.detail}
-                onClose={() => setModalState(prev => ({ ...prev, detail: false }))}
-                data={selectedData}
-            />
-
-            <ActionModal
-                isOpen={modalState.perbaiki}
-                onClose={() => setModalState(prev => ({ ...prev, perbaiki: false }))}
-                onSubmit={handlePerbaiki}
-                title="Keterangan Perbaikan"
-                actionType="perbaiki"
-                data={selectedData}
-                isLoading={isSubmitting}
-            />
-
-            <ActionModal
-                isOpen={modalState.tolak}
-                onClose={() => setModalState(prev => ({ ...prev, tolak: false }))}
-                onSubmit={handleTolak}
-                title="Alasan Penolakan"
-                actionType="tolak"
-                data={selectedData}
-                isLoading={isSubmitting}
-            />
-
-            <UploadModalPemberhentian
-                isOpen={modalState.upload}
-                onClose={() => setModalState(prev => ({ ...prev, upload: false }))}
-                onSubmit={handleUpload}
-                data={selectedData}
-                isLoading={isSubmitting}
-            />
+            <DetailModalPemberhentian isOpen={modalState.detail} onClose={() => setModalState(prev => ({ ...prev, detail: false }))} data={selectedData} />
+            <ActionModal isOpen={modalState.perbaiki} onClose={() => setModalState(prev => ({ ...prev, perbaiki: false }))} onSubmit={handlePerbaiki} title="Keterangan Perbaikan" actionType="perbaiki" data={selectedData} />
+            <ActionModal isOpen={modalState.tolak} onClose={() => setModalState(prev => ({ ...prev, tolak: false }))} onSubmit={handleTolak} title="Alasan Penolakan" actionType="tolak" data={selectedData} />
+            <UploadModalPemberhentian isOpen={modalState.upload} onClose={() => setModalState(prev => ({ ...prev, upload: false }))} onSubmit={handleUpload} data={selectedData} />
         </div>
     );
 }

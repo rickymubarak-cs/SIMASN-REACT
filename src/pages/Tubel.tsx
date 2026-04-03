@@ -3,13 +3,13 @@ import { AlertCircle, GraduationCap } from 'lucide-react';
 import { useTubelData } from '../hooks/useTubelData';
 import { Navbar } from '../components/layout/Navbar';
 import { DashboardSearchBar } from '../components/layout/DashboardSearchBar';
-import { DataCardTubel } from '../components/cards/DataCardTubel';
-import { DataCardTubelCompact } from '../components/cards/DataCardTubelCompact';
-import { DataCardTubelDetailed } from '../components/cards/DataCardTubelDetailed';
+import { DataCardTubel } from '../components/cards/Pelayanan/Admin/Tubel/DataCardTubel';
+import { DataCardTubelCompact } from '../components/cards/Pelayanan/Admin/Tubel/DataCardTubelCompact';
+import { DataCardTubelDetailed } from '../components/cards/Pelayanan/Admin/Tubel/DataCardTubelDetailed';
 import { DataTableTubel } from '../components/tables/DataTableTubel';
-import { DetailModalTubel } from '../components/modals/DetailModalTubel';
+import { DetailModalTubel } from '../components/modals/Layanan/Admin/Tubel/DetailModalTubel';
 import { ActionModal } from '../components/modals/ActionModal';
-import { UploadModalTubel } from '../components/modals/UploadModalTubel';
+import { UploadModalTubel } from '../components/modals/Layanan/Admin/Tubel/UploadModalTubel';
 import { SkeletonLoading } from '../components/common/SkeletonLoading';
 import { tubelService } from '../service/tubelService';
 

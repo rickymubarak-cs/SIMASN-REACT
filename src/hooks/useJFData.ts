@@ -1,9 +1,9 @@
-// src/hooks/useJFData.ts
+// src/hooks/useJfData.ts
 import { useState, useEffect, useCallback } from 'react';
-import { jfService, JFData } from '../service/jfService';
+import { jfService, JfData } from '../service/jfService';
 
-interface UseJFDataReturn {
-    data: JFData[];
+interface UseJfDataReturn {
+    data: JfData[];
     loading: boolean;
     error: string | null;
     perangkatDaerah: string;
@@ -11,8 +11,8 @@ interface UseJFDataReturn {
     refreshData: () => Promise<void>;
 }
 
-export const useJFData = (): UseJFDataReturn => {
-    const [data, setData] = useState<JFData[]>([]);
+export const useJfData = (): UseJfDataReturn => {
+    const [data, setData] = useState<JfData[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [perangkatDaerah, setPerangkatDaerah] = useState<string>("");
@@ -24,7 +24,7 @@ export const useJFData = (): UseJFDataReturn => {
             const result = await jfService.getAll(perangkatDaerah);
             setData(result);
         } catch (err: any) {
-            console.error('useJFData - Error:', err);
+            console.error('useJfData - Error:', err);
             setError(err.message || "Gagal memuat data Jabatan Fungsional. Periksa koneksi VPN atau jaringan Anda.");
         } finally {
             setLoading(false);
@@ -45,4 +45,4 @@ export const useJFData = (): UseJFDataReturn => {
     };
 };
 
-export default useJFData;
+export default useJfData;

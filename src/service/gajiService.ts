@@ -12,7 +12,6 @@ export interface GajiData {
     layanan_berkala_status?: string;
     timestamp?: string;
     keterangan?: string;
-    // File-file Gaji Berkala
     file_pengantar?: string;
     file_skp?: string;
     file_hukdis?: string;
@@ -24,42 +23,44 @@ export interface GajiData {
     [key: string]: any;
 }
 
-// Base URL
-const BASE_URL = "https://simasn.pontianak.go.id";
-const BASE_URL_BERKAS = `${BASE_URL}/assets/berkas/Layanan/Berkala/`;
-const BASE_URL_BERKAS_ADMIN = `${BASE_URL}/assets/berkas/layanan_admin/gaji/`;
-const BASE_URL_FOTO = `${BASE_URL}/assets/berkas/profil/`;
+// ==============================================
+// BASE URL UNTUK BERKAS - TETAP PAKAI SERVER LAMA
+// ==============================================
+
+const BASE_URL_OLD = "https://simasn.pontianak.go.id";
+const BASE_URL_BERKAS = `${BASE_URL_OLD}/assets/berkas/Layanan/Berkala/`;
+const BASE_URL_BERKAS_ADMIN = `${BASE_URL_OLD}/assets/berkas/layanan_admin/berkala/`;
+const BASE_URL_FOTO = `${BASE_URL_OLD}/assets/berkas/profil/`;
 
 // Konfigurasi file untuk Gaji Berkala
 export const gajiFileConfig = [
-    { key: 'file_pengantar', label: 'Surat Pengantar', icon: 'Mail', color: 'green' },
-    { key: 'file_skp', label: 'File SKP', icon: 'FileCheck', color: 'blue' },
-    { key: 'file_hukdis', label: 'File Kenaikan Gaji Berkala Terakhir', icon: 'TrendingUp', color: 'orange' },
+    { key: 'file_pengantar', label: 'Surat Pengantar', icon: 'Mail', color: 'teal' },
+    { key: 'file_skp', label: 'SKP 2 Tahun Terakhir', icon: 'FileCheck', color: 'blue' },
+    { key: 'file_hukdis', label: 'Surat Keterangan Hukdis', icon: 'FileText', color: 'red' },
     { key: 'file_sk_cpns', label: 'SK CPNS', icon: 'FileCertificate', color: 'purple' },
     { key: 'file_sk_pns', label: 'SK PNS', icon: 'FileCertificate', color: 'indigo' },
-    { key: 'file_sk_pangkat', label: 'SK Pangkat Terakhir', icon: 'Award', color: 'orange' }
+    { key: 'file_sk_pangkat', label: 'SK Pangkat Terakhir', icon: 'Award', color: 'amber' },
 ];
 
+// ==============================================
+// GAJI SERVICE - DISESUAIKAN DENGAN API LARAVEL
+// ==============================================
+
 export const gajiService = {
-    // Get all Gaji Berkala data
+    // Get all Gaji data
     getAll: async (perangkatDaerah: string = ""): Promise<GajiData[]> => {
         try {
-            const url = perangkatDaerah
-                ? `/api/EndPointAPI/getgaji/${perangkatDaerah}`
-                : '/api/EndPointAPI/getgaji';
-
+            const url = perangkatDaerah ? `api/gaji/${perangkatDaerah}` : 'api/gaji';
             const response = await API.get(url);
             console.log('Gaji API Response:', response.data);
 
-            if (response.data?.status && response.data?.data) {
-                const gajiData = response.data.data.gaji;
+            if (response.data?.status === 'success' && response.data?.gaji) {
+                const gajiData = response.data.gaji;
 
                 if (Array.isArray(gajiData)) {
-                    // Proses data untuk menambahkan URL file yang benar
                     return gajiData.map((item: any) => {
                         const processedItem: any = { ...item };
 
-                        // Tambahkan URL untuk setiap file yang ada
                         gajiFileConfig.forEach(fileConfig => {
                             const fileValue = item[fileConfig.key];
                             if (fileValue && fileValue.trim() !== '') {
@@ -69,12 +70,10 @@ export const gajiService = {
                             }
                         });
 
-                        // URL untuk berkas hasil
                         processedItem.file_status_pelayanan_url = item.file_status_pelayanan
                             ? `${BASE_URL_BERKAS_ADMIN}${item.file_status_pelayanan}`
                             : null;
 
-                        // URL untuk foto
                         processedItem.foto_url = item.foto
                             ? `${BASE_URL_FOTO}${item.foto}`
                             : null;
@@ -91,37 +90,70 @@ export const gajiService = {
         }
     },
 
+    // Get detail by ID
+    getById: async (id: string): Promise<GajiData | null> => {
+        try {
+            const response = await API.get(`api/gaji/detail/${id}`);
+
+            if (response.data?.status === 'success' && response.data?.gaji) {
+                const item = response.data.gaji;
+
+                const processedItem: any = { ...item };
+                gajiFileConfig.forEach(fileConfig => {
+                    const fileValue = item[fileConfig.key];
+                    if (fileValue && fileValue.trim() !== '') {
+                        processedItem[`${fileConfig.key}_url`] = `${BASE_URL_BERKAS}${fileValue}`;
+                    } else {
+                        processedItem[`${fileConfig.key}_url`] = null;
+                    }
+                });
+                processedItem.file_status_pelayanan_url = item.file_status_pelayanan
+                    ? `${BASE_URL_BERKAS_ADMIN}${item.file_status_pelayanan}`
+                    : null;
+                processedItem.foto_url = item.foto
+                    ? `${BASE_URL_FOTO}${item.foto}`
+                    : null;
+
+                return processedItem;
+            }
+            return null;
+        } catch (error) {
+            console.error('Error fetching Gaji detail:', error);
+            throw error;
+        }
+    },
+
     // Update status (terima, tolak, perbaiki)
     updateStatus: async (id: string, status: string, keterangan?: string): Promise<any> => {
         try {
             let endpoint = '';
-            let method: 'get' | 'post' = 'get';
-            let data = null;
+            let method: 'put' | 'post' = 'post';
+            let data: any = null;
 
-            if (status === 'diterima') {
-                endpoint = `layanan_admin/gajiStatus?terima=${id}`;
-            } else if (status === 'selesai') {
-                endpoint = `layanan_admin/gajiStatus?terima_tembusan=${id}`;
-            } else if (status === 'ditolak') {
-                endpoint = `layanan_admin/gajiStatus?tolak=${id}`;
-            } else if (status === 'perbaikan') {
-                endpoint = 'layanan_admin/statusgajiPerbaiki';
-                method = 'post';
-                const formData = new URLSearchParams();
-                formData.append('layanan_gaji_id', id);
-                if (keterangan) {
-                    formData.append('keterangan', keterangan);
-                }
-                data = formData;
+            switch (status) {
+                case 'diterima':
+                    endpoint = `api/gaji/${id}/terima`;
+                    method = 'put';
+                    break;
+                case 'ditolak':
+                    endpoint = `api/gaji/${id}/tolak`;
+                    method = 'put';
+                    data = { keterangan };
+                    break;
+                case 'perbaikan':
+                    endpoint = `api/gaji/${id}/perbaikan`;
+                    method = 'post';
+                    data = { keterangan };
+                    break;
+                default:
+                    throw new Error(`Status tidak dikenal: ${status}`);
             }
 
             let response;
             if (method === 'post') {
-                response = await API.post(endpoint, data, {
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-                });
+                response = await API.post(endpoint, data);
             } else {
-                response = await API.get(endpoint);
+                response = await API.put(endpoint, data);
             }
 
             return response.data;
@@ -136,9 +168,9 @@ export const gajiService = {
         try {
             const formData = new FormData();
             formData.append('file_status_pelayanan', file);
-            formData.append('layanan_gaji_id', id);
+            formData.append('gaji_id', id);
 
-            const response = await API.post('layanan_admin/berkasLayananGaji', formData, {
+            const response = await API.post(`api/gaji/${id}/upload`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
 
@@ -154,30 +186,17 @@ export const gajiService = {
         try {
             const formData = new FormData();
             formData.append('file_status_pelayanan', newFile);
-            formData.append('layanan_gaji_id', id);
+            formData.append('gaji_id', id);
             formData.append('old_file_status_pelayanan', oldFile);
+            formData.append('_method', 'PUT');
 
-            const response = await API.post('layanan_admin/ubahberkasLayananGaji', formData, {
+            const response = await API.post(`api/gaji/${id}/berkas`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
 
             return response.data;
         } catch (error) {
             console.error('Error editing Gaji file:', error);
-            throw error;
-        }
-    },
-
-    // Get detail by ID
-    getById: async (id: string): Promise<GajiData | null> => {
-        try {
-            const response = await API.get(`EndPointAPI/getgajibyid/${id}`);
-            if (response.data?.status && response.data?.data) {
-                return response.data.data;
-            }
-            return null;
-        } catch (error) {
-            console.error('Error fetching Gaji detail:', error);
             throw error;
         }
     }

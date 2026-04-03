@@ -1,7 +1,7 @@
 // src/service/dataService.ts
 import API from './api';
 
-export interface DataRiwayat {
+export interface DataPerubahanData {
     layanan_data_id?: string;
     peg_id?: string;
     peg_nama: string;
@@ -9,12 +9,11 @@ export interface DataRiwayat {
     peg_gelar_depan?: string;
     peg_gelar_belakang?: string;
     unit_org_induk_nm?: string;
-    layanan_data_status?: string;
     jenis_layanan_data?: string;
+    layanan_data_status?: string;
     ket_perbaikan?: string;
     timestamp?: string;
     keterangan?: string;
-    // File-file Riwayat Data
     file_pengantar?: string;
     file_lampirandukung?: string;
     file_status_pelayanan?: string;
@@ -22,159 +21,50 @@ export interface DataRiwayat {
     [key: string]: any;
 }
 
-// Base URL
-const BASE_URL = "https://simasn.pontianak.go.id";
-const BASE_URL_BERKAS = `${BASE_URL}/assets/berkas/Layanan/Data/`;
-const BASE_URL_BERKAS_ADMIN = `${BASE_URL}/assets/berkas/layanan_admin/data/`;
-const BASE_URL_FOTO = `${BASE_URL}/assets/berkas/profil/`;
+const BASE_URL_OLD = "https://simasn.pontianak.go.id";
+const BASE_URL_BERKAS = `${BASE_URL_OLD}/assets/berkas/Layanan/Data/`;
+const BASE_URL_BERKAS_ADMIN = `${BASE_URL_OLD}/assets/berkas/layanan_admin/data/`;
+const BASE_URL_FOTO = `${BASE_URL_OLD}/assets/berkas/profil/`;
 
-// Konfigurasi file untuk Riwayat Data
 export const dataFileConfig = [
-    { key: 'file_pengantar', label: 'Surat Pengantar', icon: 'Mail', color: 'green' },
-    { key: 'file_lampirandukung', label: 'Dokumen Pendukung', icon: 'FileText', color: 'blue' }
+    { key: 'file_pengantar', label: 'Surat Pengantar', icon: 'Mail', color: 'gray' },
+    { key: 'file_lampirandukung', label: 'Lampiran Pendukung', icon: 'Paperclip', color: 'blue' },
 ];
 
 export const dataService = {
-    // Get all Data Riwayat data
-    getAll: async (perangkatDaerah: string = ""): Promise<DataRiwayat[]> => {
-        try {
-            const url = perangkatDaerah
-                ? `api/EndPointAPI/getdata/${perangkatDaerah}`
-                : 'api/EndPointAPI/getdata';
-
-            const response = await API.get(url);
-            console.log('Data API Response:', response.data);
-
-            if (response.data?.status && response.data?.data) {
-                const dataRiwayat = response.data.data.data;
-
-                if (Array.isArray(dataRiwayat)) {
-                    // Proses data untuk menambahkan URL file yang benar
-                    return dataRiwayat.map((item: any) => {
-                        const processedItem: any = { ...item };
-
-                        // Tambahkan URL untuk setiap file yang ada
-                        dataFileConfig.forEach(fileConfig => {
-                            const fileValue = item[fileConfig.key];
-                            if (fileValue && fileValue.trim() !== '') {
-                                processedItem[`${fileConfig.key}_url`] = `${BASE_URL_BERKAS}${fileValue}`;
-                            } else {
-                                processedItem[`${fileConfig.key}_url`] = null;
-                            }
-                        });
-
-                        // URL untuk berkas hasil
-                        processedItem.file_status_pelayanan_url = item.file_status_pelayanan
-                            ? `${BASE_URL_BERKAS_ADMIN}${item.file_status_pelayanan}`
-                            : null;
-
-                        // URL untuk foto
-                        processedItem.foto_url = item.foto
-                            ? `${BASE_URL_FOTO}${item.foto}`
-                            : null;
-
-                        return processedItem;
-                    });
-                }
-            }
-
-            return [];
-        } catch (error) {
-            console.error('Error fetching Data Riwayat:', error);
-            throw error;
-        }
-    },
-
-    // Update status (terima, tolak, perbaiki)
-    updateStatus: async (id: string, status: string, keterangan?: string): Promise<any> => {
-        try {
-            let endpoint = '';
-            let method: 'get' | 'post' = 'get';
-            let data = null;
-
-            if (status === 'diterima') {
-                endpoint = `layanan_admin/dataStatus?terima=${id}`;
-            } else if (status === 'selesai') {
-                endpoint = `layanan_admin/dataStatus?terima_tembusan=${id}`;
-            } else if (status === 'ditolak') {
-                endpoint = `layanan_admin/dataStatus?tolak=${id}`;
-            } else if (status === 'perbaikan') {
-                endpoint = 'layanan_admin/statusdataPerbaiki';
-                method = 'post';
-                const formData = new URLSearchParams();
-                formData.append('layanan_data_id', id);
-                if (keterangan) {
-                    formData.append('keterangan', keterangan);
-                }
-                data = formData;
-            }
-
-            let response;
-            if (method === 'post') {
-                response = await API.post(endpoint, data, {
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    getAll: async (perangkatDaerah: string = "") => {
+        const url = perangkatDaerah ? `api/data/${perangkatDaerah}` : 'api/data';
+        const response = await API.get(url);
+        if (response.data?.status === 'success' && response.data?.data_perubahan) {
+            return response.data.data_perubahan.map((item: any) => {
+                const processed = { ...item };
+                dataFileConfig.forEach(cfg => {
+                    const val = item[cfg.key];
+                    processed[`${cfg.key}_url`] = val?.trim() ? `${BASE_URL_BERKAS}${val}` : null;
                 });
-            } else {
-                response = await API.get(endpoint);
-            }
-
-            return response.data;
-        } catch (error) {
-            console.error('Error updating Data status:', error);
-            throw error;
-        }
-    },
-
-    // Upload berkas hasil
-    uploadBerkas: async (id: string, file: File): Promise<any> => {
-        try {
-            const formData = new FormData();
-            formData.append('file_status_pelayanan', file);
-            formData.append('layanan_data_id', id);
-
-            const response = await API.post('layanan_admin/berkasLayananData', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
+                processed.file_status_pelayanan_url = item.file_status_pelayanan ? `${BASE_URL_BERKAS_ADMIN}${item.file_status_pelayanan}` : null;
+                processed.foto_url = item.foto ? `${BASE_URL_FOTO}${item.foto}` : null;
+                return processed;
             });
-
-            return response.data;
-        } catch (error) {
-            console.error('Error uploading Data file:', error);
-            throw error;
         }
+        return [];
     },
-
-    // Edit berkas hasil
-    editBerkas: async (id: string, oldFile: string, newFile: File): Promise<any> => {
-        try {
-            const formData = new FormData();
-            formData.append('file_status_pelayanan', newFile);
-            formData.append('layanan_data_id', id);
-            formData.append('old_file_status_pelayanan', oldFile);
-
-            const response = await API.post('layanan_admin/ubahberkasLayananData', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
-
-            return response.data;
-        } catch (error) {
-            console.error('Error editing Data file:', error);
-            throw error;
+    updateStatus: async (id: string, status: string, keterangan?: string) => {
+        let endpoint = '', method: 'put' | 'post' = 'post', data = null;
+        switch (status) {
+            case 'diterima': endpoint = `api/data/${id}/terima`; method = 'put'; break;
+            case 'ditolak': endpoint = `api/data/${id}/tolak`; method = 'put'; data = { keterangan }; break;
+            case 'perbaikan': endpoint = `api/data/${id}/perbaikan`; method = 'post'; data = { keterangan }; break;
+            default: throw new Error(`Status tidak dikenal: ${status}`);
         }
+        return method === 'post' ? await API.post(endpoint, data) : await API.put(endpoint, data);
     },
-
-    // Get detail by ID
-    getById: async (id: string): Promise<DataRiwayat | null> => {
-        try {
-            const response = await API.get(`EndPointAPI/getdatabyid/${id}`);
-            if (response.data?.status && response.data?.data) {
-                return response.data.data;
-            }
-            return null;
-        } catch (error) {
-            console.error('Error fetching Data detail:', error);
-            throw error;
-        }
-    }
+    uploadBerkas: async (id: string, file: File) => {
+        const formData = new FormData();
+        formData.append('file_status_pelayanan', file);
+        formData.append('data_id', id);
+        return await API.post(`api/data/${id}/upload`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+    },
 };
 
 export default dataService;

@@ -9,15 +9,12 @@ export interface KompetensiData {
     peg_gelar_depan?: string;
     peg_gelar_belakang?: string;
     unit_org_induk_nm?: string;
-    layanan_status?: string;
     riw_kom_jenis?: string;
     riw_kom_nama?: string;
     riw_kom_penyelenggara?: string;
-    riw_kom_no?: string;
-    riw_kom_tmtm?: string;
-    riw_kom_tmts?: string;
     riw_kom_tahun?: string;
-    riw_kom_jp?: string;
+    riw_kom_jp?: number;
+    layanan_status?: string;
     timestamp?: string;
     keterangan?: string;
     file_sertifikat?: string;
@@ -26,155 +23,49 @@ export interface KompetensiData {
     [key: string]: any;
 }
 
-// Base URL
-const BASE_URL = "https://simasn.pontianak.go.id";
-const BASE_URL_BERKAS = `${BASE_URL}/assets/berkas/Layanan/Kompetensi/`;
-const BASE_URL_BERKAS_ADMIN = `${BASE_URL}/assets/berkas/layanan_admin/kompetensi/`;
-const BASE_URL_FOTO = `${BASE_URL}/assets/berkas/profil/`;
+const BASE_URL_OLD = "https://simasn.pontianak.go.id";
+const BASE_URL_BERKAS = `${BASE_URL_OLD}/assets/berkas/Layanan/Kompetensi/`;
+const BASE_URL_BERKAS_ADMIN = `${BASE_URL_OLD}/assets/berkas/layanan_admin/kompetensi/`;
+const BASE_URL_FOTO = `${BASE_URL_OLD}/assets/berkas/profil/`;
 
-// Konfigurasi file untuk Pengembangan Kompetensi
 export const kompetensiFileConfig = [
-    { key: 'file_sertifikat', label: 'Sertifikat / Surat Tanda Tamat', icon: 'Award', color: 'blue' }
+    { key: 'file_sertifikat', label: 'Sertifikat Kompetensi', icon: 'Award', color: 'orange' },
 ];
 
 export const kompetensiService = {
-    // Get all Kompetensi data
-    getAll: async (perangkatDaerah: string = ""): Promise<KompetensiData[]> => {
-        try {
-            const url = perangkatDaerah
-                ? `/api/EndPointAPI/getkompetensi/${perangkatDaerah}`
-                : '/api/EndPointAPI/getkompetensi';
-
-            const response = await API.get(url);
-            console.log('Kompetensi API Response:', response.data);
-
-            if (response.data?.status && response.data?.data) {
-                const kompetensiData = response.data.data.kompetensi;
-
-                if (Array.isArray(kompetensiData)) {
-                    // Proses data untuk menambahkan URL file yang benar
-                    return kompetensiData.map((item: any) => {
-                        const processedItem: any = { ...item };
-
-                        // Tambahkan URL untuk file sertifikat
-                        if (item.file_sertifikat && item.file_sertifikat.trim() !== '') {
-                            processedItem.file_sertifikat_url = `${BASE_URL_BERKAS}${item.file_sertifikat}`;
-                        } else {
-                            processedItem.file_sertifikat_url = null;
-                        }
-
-                        // URL untuk berkas hasil
-                        processedItem.file_status_pelayanan_url = item.file_status_pelayanan
-                            ? `${BASE_URL_BERKAS_ADMIN}${item.file_status_pelayanan}`
-                            : null;
-
-                        // URL untuk foto
-                        processedItem.foto_url = item.foto
-                            ? `${BASE_URL_FOTO}${item.foto}`
-                            : null;
-
-                        return processedItem;
-                    });
-                }
-            }
-
-            return [];
-        } catch (error) {
-            console.error('Error fetching Kompetensi data:', error);
-            throw error;
-        }
-    },
-
-    // Update status (terima, tolak, perbaiki)
-    updateStatus: async (id: string, status: string, keterangan?: string): Promise<any> => {
-        try {
-            let endpoint = '';
-            let method: 'get' | 'post' = 'get';
-            let data = null;
-
-            if (status === 'diterima') {
-                endpoint = `layanan_admin/kompetensiStatus?terima=${id}`;
-            } else if (status === 'selesai') {
-                endpoint = `layanan_admin/kompetensiStatus?terima_tembusan=${id}`;
-            } else if (status === 'ditolak') {
-                endpoint = `layanan_admin/kompetensiStatus?tolak=${id}`;
-            } else if (status === 'perbaikan') {
-                endpoint = 'layanan_admin/statuskompetensiPerbaiki';
-                method = 'post';
-                const formData = new URLSearchParams();
-                formData.append('komp_id', id);
-                if (keterangan) {
-                    formData.append('keterangan', keterangan);
-                }
-                data = formData;
-            }
-
-            let response;
-            if (method === 'post') {
-                response = await API.post(endpoint, data, {
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    getAll: async (perangkatDaerah: string = "") => {
+        const url = perangkatDaerah ? `api/kompetensi/${perangkatDaerah}` : 'api/kompetensi';
+        const response = await API.get(url);
+        if (response.data?.status === 'success' && response.data?.kompetensi) {
+            return response.data.kompetensi.map((item: any) => {
+                const processed = { ...item };
+                kompetensiFileConfig.forEach(cfg => {
+                    const val = item[cfg.key];
+                    processed[`${cfg.key}_url`] = val?.trim() ? `${BASE_URL_BERKAS}${val}` : null;
                 });
-            } else {
-                response = await API.get(endpoint);
-            }
-
-            return response.data;
-        } catch (error) {
-            console.error('Error updating Kompetensi status:', error);
-            throw error;
-        }
-    },
-
-    // Upload berkas hasil
-    uploadBerkas: async (id: string, file: File): Promise<any> => {
-        try {
-            const formData = new FormData();
-            formData.append('file_status_pelayanan', file);
-            formData.append('komp_id', id);
-
-            const response = await API.post('layanan_admin/berkasLayananKompetensi', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
+                processed.file_status_pelayanan_url = item.file_status_pelayanan ? `${BASE_URL_BERKAS_ADMIN}${item.file_status_pelayanan}` : null;
+                processed.foto_url = item.foto ? `${BASE_URL_FOTO}${item.foto}` : null;
+                return processed;
             });
-
-            return response.data;
-        } catch (error) {
-            console.error('Error uploading Kompetensi file:', error);
-            throw error;
         }
+        return [];
     },
-
-    // Edit berkas hasil
-    editBerkas: async (id: string, oldFile: string, newFile: File): Promise<any> => {
-        try {
-            const formData = new FormData();
-            formData.append('file_status_pelayanan', newFile);
-            formData.append('komp_id', id);
-            formData.append('old_file_status_pelayanan', oldFile);
-
-            const response = await API.post('layanan_admin/ubahberkasLayananKompetensi', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
-
-            return response.data;
-        } catch (error) {
-            console.error('Error editing Kompetensi file:', error);
-            throw error;
+    updateStatus: async (id: string, status: string, keterangan?: string) => {
+        let endpoint = '', method: 'put' | 'post' = 'post', data = null;
+        switch (status) {
+            case 'diterima': endpoint = `api/kompetensi/${id}/terima`; method = 'put'; break;
+            case 'ditolak': endpoint = `api/kompetensi/${id}/tolak`; method = 'put'; data = { keterangan }; break;
+            case 'perbaikan': endpoint = `api/kompetensi/${id}/perbaikan`; method = 'post'; data = { keterangan }; break;
+            default: throw new Error(`Status tidak dikenal: ${status}`);
         }
+        return method === 'post' ? await API.post(endpoint, data) : await API.put(endpoint, data);
     },
-
-    // Get detail by ID
-    getById: async (id: string): Promise<KompetensiData | null> => {
-        try {
-            const response = await API.get(`EndPointAPI/getkompetensibyid/${id}`);
-            if (response.data?.status && response.data?.data) {
-                return response.data.data;
-            }
-            return null;
-        } catch (error) {
-            console.error('Error fetching Kompetensi detail:', error);
-            throw error;
-        }
-    }
+    uploadBerkas: async (id: string, file: File) => {
+        const formData = new FormData();
+        formData.append('file_status_pelayanan', file);
+        formData.append('kompetensi_id', id);
+        return await API.post(`api/kompetensi/${id}/upload`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+    },
 };
 
 export default kompetensiService;

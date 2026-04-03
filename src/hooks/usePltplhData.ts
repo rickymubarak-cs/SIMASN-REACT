@@ -24,8 +24,8 @@ export const usePltplhData = (): UsePltplhDataReturn => {
             const result = await pltplhService.getAll(perangkatDaerah);
             setData(result);
         } catch (err: any) {
-            setError(err.message || "Gagal memuat data. Periksa koneksi VPN atau jaringan Anda.");
-            console.error('Fetch error:', err);
+            console.error('usePltplhData - Error:', err);
+            setError(err.message || "Gagal memuat data Pelaksana Tugas (PLT/PLH). Periksa koneksi VPN atau jaringan Anda.");
         } finally {
             setLoading(false);
         }

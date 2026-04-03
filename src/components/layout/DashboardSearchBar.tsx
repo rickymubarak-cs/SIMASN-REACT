@@ -158,13 +158,79 @@ export const DashboardSearchBar: React.FC<DashboardSearchBarProps> = ({
             button: 'bg-blue-600 hover:bg-blue-700 text-white',
             inputBorder: 'focus:ring-blue-500/5',
             resultHover: 'hover:bg-blue-50',
-            viewModeActive: 'bg-blue-600 text-white shadow-sm',  // Warna biru untuk active
+            viewModeActive: 'bg-blue-600 text-white shadow-sm',
             viewModeInactive: 'text-slate-400 hover:text-slate-700 hover:bg-white/50',
             inputBg: 'bg-slate-50',
             inputText: 'text-slate-900',
             inputPlaceholder: 'placeholder:text-slate-400',
             inputBorderColor: 'border-slate-200'
-        }
+        },
+        pltplh: {
+            button: 'bg-emerald-600 hover:bg-emerald-700 text-white',
+            inputBorder: 'focus:ring-emerald-500/5',
+            resultHover: 'hover:bg-emerald-50',
+            viewModeActive: 'bg-emerald-600 text-white shadow-sm',
+            viewModeInactive: 'text-slate-400 hover:text-slate-700 hover:bg-white/50',
+            inputBg: 'bg-slate-50',
+            inputText: 'text-slate-900',
+            inputPlaceholder: 'placeholder:text-slate-400',
+            inputBorderColor: 'border-slate-200'
+        },
+        pangkat: {
+            button: 'bg-purple-600 hover:bg-purple-700 text-white',
+            inputBorder: 'focus:ring-purple-500/5',
+            resultHover: 'hover:bg-purple-50',
+            viewModeActive: 'bg-purple-600 text-white shadow-sm',
+            viewModeInactive: 'text-slate-400 hover:text-slate-700 hover:bg-white/50',
+            inputBg: 'bg-slate-50',
+            inputText: 'text-slate-900',
+            inputPlaceholder: 'placeholder:text-slate-400',
+            inputBorderColor: 'border-slate-200'
+        },
+        cuti: {
+            button: 'bg-cyan-600 hover:bg-cyan-700 text-white',
+            inputBorder: 'focus:ring-cyan-500/5',
+            resultHover: 'hover:bg-cyan-50',
+            viewModeActive: 'bg-cyan-600 text-white shadow-sm',
+            viewModeInactive: 'text-slate-400 hover:text-slate-700 hover:bg-white/50',
+            inputBg: 'bg-slate-50',
+            inputText: 'text-slate-900',
+            inputPlaceholder: 'placeholder:text-slate-400',
+            inputBorderColor: 'border-slate-200'
+        },
+        gaji: {
+            button: 'bg-teal-600 hover:bg-teal-700 text-white',
+            inputBorder: 'focus:ring-teal-500/5',
+            resultHover: 'hover:bg-teal-50',
+            viewModeActive: 'bg-teal-600 text-white shadow-sm',
+            viewModeInactive: 'text-slate-400 hover:text-slate-700 hover:bg-white/50',
+            inputBg: 'bg-slate-50',
+            inputText: 'text-slate-900',
+            inputPlaceholder: 'placeholder:text-slate-400',
+            inputBorderColor: 'border-slate-200'
+        },
+        jf: {
+            button: 'bg-indigo-600 hover:bg-indigo-700 text-white',
+            inputBorder: 'focus:ring-indigo-500/5',
+            resultHover: 'hover:bg-indigo-50',
+            viewModeActive: 'bg-indigo-600 text-white shadow-sm',
+            viewModeInactive: 'text-slate-400 hover:text-slate-700 hover:bg-white/50',
+            inputBg: 'bg-slate-50',
+            inputText: 'text-slate-900',
+            inputPlaceholder: 'placeholder:text-slate-400',
+            inputBorderColor: 'border-slate-200'
+        },
+        pemberhentian : {
+            button: 'bg-rose-600 hover:bg-rose-700 text-white',
+            inputBorder: 'focus:ring-rose-500/5',
+            resultHover: 'hover:bg-rose-50',
+            viewModeActive: 'bg-rose-600 text-white shadow-sm',
+            viewModeInactive: 'text-slate-400 hover:text-slate-700 hover:bg-white/50',
+            inputBg: 'bg-slate-50',
+            inputText: 'text-slate-900',
+            inputPlaceholder: 'placeholder:text-slate-400',
+            inputBorderColor: 'border-slate-200'
+        },
     };
 
     const currentVariant = variantClasses[variant] || variantClasses.default;
