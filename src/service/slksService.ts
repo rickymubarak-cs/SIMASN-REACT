@@ -50,7 +50,6 @@ export const slksService = {
         try {
             const url = perangkatDaerah ? `api/slks/${perangkatDaerah}` : 'api/slks';
             const response = await API.get(url);
-            console.log('SLKS API Response:', response.data);
 
             if (response.data?.status === 'success' && response.data?.slks) {
                 const slksData = response.data.slks;
@@ -135,19 +134,24 @@ export const slksService = {
         }
     },
 
+    // src/service/slksService.ts
+
     editBerkas: async (id: string, oldFile: string, newFile: File): Promise<any> => {
         try {
             const formData = new FormData();
             formData.append('file_status_pelayanan', newFile);
             formData.append('old_file_status_pelayanan', oldFile);
-            formData.append('_method', 'PUT'); // Untuk method spoofing jika menggunakan POST
 
+            console.log('Edit berkas request:', { id, oldFile, newFileName: newFile.name });
+
+            // Gunakan method POST dengan spoofing _method=PUT
             const response = await API.post(`api/slks/${id}/edit-berkas`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data'
                 }
             });
 
+            console.log('Edit berkas response:', response.data);
             return response.data;
         } catch (error) {
             console.error('Error editing SLKS file:', error);

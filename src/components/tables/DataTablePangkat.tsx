@@ -1,6 +1,7 @@
 // src/components/tables/DataTablePangkat.tsx
+
 import React, { useState } from 'react';
-import { Eye, Edit, Ban, CheckCircle, Upload, ChevronUp, ChevronDown, TrendingUp } from 'lucide-react';
+import { Eye, Edit, Ban, CheckCircle, Upload, ChevronUp, ChevronDown, Loader, FileCheck, TrendingUp } from 'lucide-react';
 import { StatusBadge } from '../common/StatusBadge';
 import { formatDateTimeId } from '../../utils/formatters';
 
@@ -29,6 +30,7 @@ export const DataTablePangkat: React.FC<DataTablePangkatProps> = ({
     const [sortField, setSortField] = useState<SortField>('tanggal');
     const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
     const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
+    const [actionLoading, setActionLoading] = useState<{ type: string; id: string } | null>(null);
 
     const handleSort = (field: SortField) => {
         if (sortField === field) {
@@ -42,6 +44,15 @@ export const DataTablePangkat: React.FC<DataTablePangkatProps> = ({
     const getSortIcon = (field: SortField) => {
         if (sortField !== field) return <ChevronUp size={14} className="opacity-30" />;
         return sortOrder === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />;
+    };
+
+    const handleAction = async (type: string, id: string, action: () => void | Promise<void>) => {
+        setActionLoading({ type, id });
+        try {
+            await action();
+        } finally {
+            setActionLoading(null);
+        }
     };
 
     const filteredAndSortedData = React.useMemo(() => {
@@ -127,14 +138,18 @@ export const DataTablePangkat: React.FC<DataTablePangkatProps> = ({
                                 </button>
                             </th>
                             <th className="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
+                                Golongan
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
                                 <button onClick={() => handleSort('tanggal')} className="flex items-center gap-1 hover:text-purple-600">
                                     Tanggal {getSortIcon('tanggal')}
                                 </button>
                             </th>
                             <th className="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
-                                <button onClick={() => handleSort('status')} className="flex items-center gap-1 hover:text-purple-600">
-                                    Status {getSortIcon('status')}
-                                </button>
+                                Status
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
+                                Berkas
                             </th>
                             <th className="px-4 py-3 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">
                                 Aksi
@@ -145,6 +160,7 @@ export const DataTablePangkat: React.FC<DataTablePangkatProps> = ({
                         {filteredAndSortedData.map((item, idx) => {
                             const status = item.layanan_status || "pengajuan";
                             const namaLengkap = getNamaLengkap(item);
+                            const isLoading = actionLoading?.id === item.layanan_id;
 
                             return (
                                 <tr key={idx} className="hover:bg-slate-50 transition-colors">
@@ -163,6 +179,9 @@ export const DataTablePangkat: React.FC<DataTablePangkatProps> = ({
                                             {item.lay_kp_jenis || "-"}
                                         </span>
                                     </td>
+                                    <td className="px-4 py-3 text-sm text-slate-600">
+                                        {item.gol_id || "-"}
+                                    </td>
                                     <td className="px-4 py-3 text-xs text-slate-500">
                                         {formatDateTimeId(item.layanan_tgl || item.timestamp)}
                                     </td>
@@ -170,26 +189,66 @@ export const DataTablePangkat: React.FC<DataTablePangkatProps> = ({
                                         <StatusBadge status={status} size="sm" />
                                     </td>
                                     <td className="px-4 py-3">
+                                        {item.file_status_pelayanan ? (
+                                            <div className="flex items-center gap-1 text-[10px] text-green-600 bg-green-50 px-2 py-1 rounded-full w-fit">
+                                                <FileCheck size={10} />
+                                                <span className="truncate max-w-[100px]">{item.file_status_pelayanan}</span>
+                                            </div>
+                                        ) : (
+                                            <span className="text-[10px] text-slate-400">-</span>
+                                        )}
+                                    </td>
+                                    <td className="px-4 py-3">
                                         <div className="flex gap-1 justify-center">
-                                            <button onClick={() => onDetail(item)} className="p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-purple-100 hover:text-purple-600 transition-all" title="Detail">
+                                            <button
+                                                onClick={() => handleAction('detail', item.layanan_id, () => onDetail(item))}
+                                                disabled={isLoading}
+                                                className="p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-purple-100 hover:text-purple-600 transition-all disabled:opacity-50"
+                                                title="Detail"
+                                            >
                                                 <Eye size={14} />
                                             </button>
+
                                             {status === "pengajuan" && (
                                                 <>
-                                                    <button onClick={() => onPerbaiki(item)} className="p-1.5 rounded-lg bg-orange-100 text-orange-600 hover:bg-orange-600 hover:text-white transition-all" title="Perbaiki">
-                                                        <Edit size={14} />
+                                                    <button
+                                                        onClick={() => handleAction('perbaiki', item.layanan_id, () => onPerbaiki(item))}
+                                                        disabled={isLoading}
+                                                        className="p-1.5 rounded-lg bg-orange-100 text-orange-600 hover:bg-orange-600 hover:text-white transition-all disabled:opacity-50"
+                                                        title="Perbaiki"
+                                                    >
+                                                        {actionLoading?.type === 'perbaiki' && isLoading ? <Loader size={14} className="animate-spin" /> : <Edit size={14} />}
                                                     </button>
-                                                    <button onClick={() => onTolak(item)} className="p-1.5 rounded-lg bg-red-100 text-red-600 hover:bg-red-600 hover:text-white transition-all" title="Tolak">
-                                                        <Ban size={14} />
+                                                    <button
+                                                        onClick={() => handleAction('tolak', item.layanan_id, () => onTolak(item))}
+                                                        disabled={isLoading}
+                                                        className="p-1.5 rounded-lg bg-red-100 text-red-600 hover:bg-red-600 hover:text-white transition-all disabled:opacity-50"
+                                                        title="Tolak"
+                                                    >
+                                                        {actionLoading?.type === 'tolak' && isLoading ? <Loader size={14} className="animate-spin" /> : <Ban size={14} />}
                                                     </button>
-                                                    <button onClick={() => onTerima(item.layanan_id, false)} className="p-1.5 rounded-lg bg-green-100 text-green-600 hover:bg-green-600 hover:text-white transition-all" title="Terima">
-                                                        <CheckCircle size={14} />
+                                                    <button
+                                                        onClick={() => handleAction('terima', item.layanan_id, () => onTerima(item.layanan_id, false))}
+                                                        disabled={isLoading}
+                                                        className="p-1.5 rounded-lg bg-green-100 text-green-600 hover:bg-green-600 hover:text-white transition-all disabled:opacity-50"
+                                                        title="Terima"
+                                                    >
+                                                        {actionLoading?.type === 'terima' && isLoading ? <Loader size={14} className="animate-spin" /> : <CheckCircle size={14} />}
                                                     </button>
                                                 </>
                                             )}
-                                            {status === "diterima" && (
-                                                <button onClick={() => onUpload(item)} className="p-1.5 rounded-lg bg-purple-100 text-purple-600 hover:bg-purple-600 hover:text-white transition-all" title="Upload Berkas">
-                                                    <Upload size={14} />
+
+                                            {(status === "diterima" || status === "selesai") && (
+                                                <button
+                                                    onClick={() => handleAction('upload', item.layanan_id, () => onUpload(item))}
+                                                    disabled={isLoading}
+                                                    className={`p-1.5 rounded-lg transition-all disabled:opacity-50 ${status === "selesai"
+                                                            ? 'bg-purple-100 text-purple-600 hover:bg-purple-600 hover:text-white'
+                                                            : 'bg-emerald-100 text-emerald-600 hover:bg-emerald-600 hover:text-white'
+                                                        }`}
+                                                    title={status === "selesai" ? "Ganti Berkas" : "Upload Berkas"}
+                                                >
+                                                    {actionLoading?.type === 'upload' && isLoading ? <Loader size={14} className="animate-spin" /> : <Upload size={14} />}
                                                 </button>
                                             )}
                                         </div>

@@ -1,4 +1,5 @@
-// src/components/modals/DetailModalDiklat.tsx
+// src/components/modals/Layanan/Admin/Diklat/DetailModalDiklat.tsx
+
 import React, { useState } from 'react';
 import {
     X, User, Building, Paperclip, FileCheck, Clock, Info, BookOpen, ChevronDown, ChevronUp,

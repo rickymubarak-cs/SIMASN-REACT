@@ -1,23 +1,37 @@
-// src/components/modals/UploadModalDiklat.tsx
-import React, { useState } from 'react';
+// src/components/modals/Layanan/Admin/Diklat/UploadModalDiklat.tsx
+
+import React, { useState, useEffect } from 'react';
 import { X, Upload, FileCheck, RefreshCcw, User, BookOpen, Building, AlertCircle } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 interface UploadModalDiklatProps {
     isOpen: boolean;
     onClose: () => void;
     onSubmit: (id: string, file: File) => void;
+    onEdit?: (id: string, oldFile: string, newFile: File) => void;
     data: any;
+    mode?: 'upload' | 'edit';
 }
 
 export const UploadModalDiklat: React.FC<UploadModalDiklatProps> = ({
     isOpen,
     onClose,
     onSubmit,
-    data
+    onEdit,
+    data,
+    mode = 'upload'
 }) => {
     const [uploadFile, setUploadFile] = useState<File | null>(null);
     const [uploading, setUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!isOpen) {
+            setUploadFile(null);
+            setError(null);
+            setUploading(false);
+        }
+    }, [isOpen]);
 
     if (!isOpen || !data) return null;
 
@@ -41,13 +55,26 @@ export const UploadModalDiklat: React.FC<UploadModalDiklatProps> = ({
         }
 
         setUploading(true);
+        const loadingToast = toast.loading(mode === 'edit' ? 'Mengganti berkas...' : 'Mengupload berkas...');
+
         try {
-            await onSubmit(data.layanan_diklat_id || data.id, uploadFile);
+            if (mode === 'edit' && onEdit) {
+                const oldFileName = data.file_status_pelayanan;
+                if (!oldFileName) {
+                    throw new Error('Nama file lama tidak ditemukan');
+                }
+                await onEdit(data.layanan_diklat_id || data.id, oldFileName, uploadFile);
+                toast.success('Berkas berhasil diganti!', { id: loadingToast });
+            } else {
+                await onSubmit(data.layanan_diklat_id || data.id, uploadFile);
+                toast.success('Berkas berhasil diupload!', { id: loadingToast });
+            }
             setUploadFile(null);
             setError(null);
             onClose();
         } catch (err) {
             console.error("Upload error:", err);
+            toast.error('Gagal upload berkas. Silakan coba lagi.', { id: loadingToast });
             setError("Gagal upload berkas. Silakan coba lagi.");
         } finally {
             setUploading(false);
@@ -65,9 +92,14 @@ export const UploadModalDiklat: React.FC<UploadModalDiklatProps> = ({
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <Upload size={24} />
-                            <h2 className="text-xl font-black">Upload Berkas Hasil Diklat</h2>
+                            <h2 className="text-xl font-black">
+                                {mode === 'edit' ? 'Ganti Berkas Hasil Diklat' : 'Upload Berkas Hasil Diklat'}
+                            </h2>
                         </div>
-                        <button onClick={onClose} disabled={uploading} className="p-1 hover:bg-white/20 rounded-lg transition-colors disabled:opacity-50">
+                        {mode === 'edit' && (
+                            <span className="px-2 py-1 bg-white/20 rounded-full text-xs font-medium">Edit Mode</span>
+                        )}
+                        <button onClick={onClose} className="p-1 hover:bg-white/20 rounded-lg transition-colors">
                             <X size={20} />
                         </button>
                     </div>
@@ -113,37 +145,93 @@ export const UploadModalDiklat: React.FC<UploadModalDiklatProps> = ({
                         </div>
                     </div>
 
+                    {mode === 'edit' && data.file_status_pelayanan && (
+                        <div className="mb-4 bg-amber-50 rounded-xl p-3 border border-amber-200">
+                            <p className="text-[10px] font-bold text-amber-600 mb-1">Berkas Saat Ini</p>
+                            <p className="text-xs text-amber-700 font-mono break-all">{data.file_status_pelayanan}</p>
+                        </div>
+                    )}
+
                     <div className="mb-4">
-                        <label className="block text-xs font-bold text-slate-600 mb-2">Berkas Hasil (PDF)</label>
-                        <div className={`border-2 border-dashed rounded-2xl p-6 text-center transition-all cursor-pointer ${error ? 'border-red-300 bg-red-50' : 'border-slate-200 hover:border-sky-500 bg-slate-50 hover:bg-sky-50'}`} onClick={() => document.getElementById('uploadFileInputDiklat')?.click()}>
+                        <label className="block text-xs font-bold text-slate-600 mb-2">
+                            {mode === 'edit' ? 'Berkas Baru (PDF)' : 'Berkas Hasil (PDF)'}
+                        </label>
+                        <div
+                            className={`border-2 border-dashed rounded-2xl p-6 text-center transition-all cursor-pointer
+                                ${error ? 'border-red-300 bg-red-50' : 'border-slate-200 hover:border-sky-500 bg-slate-50 hover:bg-sky-50'}
+                            `}
+                            onClick={() => document.getElementById('uploadFileInputDiklat')?.click()}
+                        >
                             <Upload size={32} className={`mx-auto mb-2 ${error ? 'text-red-400' : 'text-slate-400'}`} />
                             <p className="text-xs font-medium text-slate-600">Klik untuk pilih file PDF</p>
                             <p className="text-[9px] text-slate-400 mt-1">Maksimal 2MB</p>
-                            <input id="uploadFileInputDiklat" type="file" accept=".pdf" className="hidden" onChange={(e) => { if (e.target.files?.[0]) { setError(null); setUploadFile(e.target.files[0]); } }} />
+                            <input
+                                id="uploadFileInputDiklat"
+                                type="file"
+                                accept=".pdf"
+                                className="hidden"
+                                onChange={(e) => {
+                                    if (e.target.files && e.target.files[0]) {
+                                        const file = e.target.files[0];
+                                        setError(null);
+                                        if (file.size > 2 * 1024 * 1024) {
+                                            setError("Ukuran file maksimal 2MB");
+                                            return;
+                                        }
+                                        if (file.type !== 'application/pdf') {
+                                            setError("Hanya file PDF yang diperbolehkan");
+                                            return;
+                                        }
+                                        setUploadFile(file);
+                                    }
+                                }}
+                            />
                         </div>
+
                         {uploadFile && (
                             <div className="mt-3 p-3 bg-green-50 rounded-xl flex items-center gap-2 border border-green-200">
                                 <FileCheck size={16} className="text-green-600 flex-shrink-0" />
-                                <span className="text-xs text-green-700 truncate flex-1">{uploadFile.name}</span>
-                                <button onClick={() => { setUploadFile(null); setError(null); }} className="text-red-500 hover:text-red-700 transition-colors" type="button"><X size={14} /></button>
+                                <div className="flex-1">
+                                    <p className="text-xs font-medium text-green-700 truncate">{uploadFile.name}</p>
+                                    <p className="text-[9px] text-green-500">{(uploadFile.size / 1024).toFixed(2)} KB</p>
+                                </div>
+                                <button onClick={() => { setUploadFile(null); setError(null); }} className="text-red-500 hover:text-red-700 transition-colors" type="button">
+                                    <X size={14} />
+                                </button>
                             </div>
                         )}
+
                         {error && (
                             <div className="mt-3 p-2 bg-red-50 rounded-lg flex items-center gap-2">
                                 <AlertCircle size={14} className="text-red-500 flex-shrink-0" />
                                 <p className="text-[10px] text-red-600">{error}</p>
                             </div>
                         )}
+
                         <p className="text-[10px] text-slate-400 mt-3">
-                            Pastikan berkas yang diupload adalah SK / Sertifikat Diklat hasil akhir yang sudah diverifikasi.
+                            {mode === 'edit'
+                                ? 'Upload file PDF baru untuk menggantikan berkas yang lama'
+                                : 'Pastikan berkas yang diupload adalah SK / Sertifikat Diklat hasil akhir yang sudah diverifikasi'
+                            }
                         </p>
                     </div>
 
-                    <div className="flex gap-3 mt-6">
-                        <button type="button" onClick={onClose} disabled={uploading} className="flex-1 px-4 py-2 border border-slate-200 rounded-xl text-sm font-bold hover:bg-slate-50 transition-colors disabled:opacity-50">Batal</button>
-                        <button type="submit" disabled={uploading || !uploadFile} className="flex-1 px-4 py-2 bg-sky-500 text-white rounded-xl text-sm font-bold hover:bg-sky-600 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <div className="flex gap-3">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            disabled={uploading}
+                            className="flex-1 px-4 py-2 border border-slate-200 rounded-xl text-sm font-bold hover:bg-slate-50 transition-colors disabled:opacity-50"
+                        >
+                            Batal
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={uploading || !uploadFile}
+                            className="flex-1 px-4 py-2 bg-sky-500 text-white rounded-xl text-sm font-bold hover:bg-sky-600 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
                             {uploading ? <RefreshCcw size={14} className="animate-spin" /> : <Upload size={14} />}
-                            {uploading ? "Mengupload..." : "Upload Berkas"}
+                            {uploading ? "Mengupload..." : (mode === 'edit' ? "Ganti Berkas" : "Upload")}
                         </button>
                     </div>
                 </form>

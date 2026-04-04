@@ -56,22 +56,20 @@ export const UploadModalSlks: React.FC<UploadModalSlksProps> = ({
         }
 
         setUploading(true);
-        const loadingToast = toast.loading(mode === 'edit' ? 'Mengganti berkas...' : 'Mengupload berkas...');
-
         try {
             if (mode === 'edit' && onEdit) {
-                await onEdit(data.slks_id || data.id, data.file_status_pelayanan, uploadFile);
-                toast.success('Berkas berhasil diganti!', { id: loadingToast });
+                // Pastikan oldFile dikirim dengan benar
+                const oldFileName = data.file_status_pelayanan;
+                console.log('Edit mode - old file:', oldFileName, 'new file:', uploadFile.name);
+                await onEdit(data.slks_id || data.id, oldFileName, uploadFile);
             } else {
                 await onSubmit(data.slks_id || data.id, uploadFile);
-                toast.success('Berkas berhasil diupload!', { id: loadingToast });
             }
             setUploadFile(null);
             setError(null);
             onClose();
         } catch (err) {
             console.error("Upload error:", err);
-            toast.error('Gagal upload berkas. Silakan coba lagi.', { id: loadingToast });
             setError("Gagal upload berkas. Silakan coba lagi.");
         } finally {
             setUploading(false);

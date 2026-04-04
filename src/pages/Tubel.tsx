@@ -1,5 +1,8 @@
+// src/pages/Tubel.tsx
+
 import React, { useState, useEffect } from 'react';
 import { AlertCircle, GraduationCap } from 'lucide-react';
+import { toast, Toaster } from 'react-hot-toast';
 import { useTubelData } from '../hooks/useTubelData';
 import { Navbar } from '../components/layout/Navbar';
 import { DashboardSearchBar } from '../components/layout/DashboardSearchBar';
@@ -12,6 +15,7 @@ import { ActionModal } from '../components/modals/ActionModal';
 import { UploadModalTubel } from '../components/modals/Layanan/Admin/Tubel/UploadModalTubel';
 import { SkeletonLoading } from '../components/common/SkeletonLoading';
 import { tubelService } from '../service/tubelService';
+import { showSuccess, showError } from '../components/common/Toast';
 
 type ViewMode = 'standard' | 'compact' | 'detailed' | 'table';
 
@@ -50,7 +54,6 @@ export default function Tubel({ activeTab, onTabChange }: TubelProps) {
         const namaLengkap = `${item.peg_gelar_depan || ""} ${item.peg_nama || ""} ${item.peg_gelar_belakang || ""}`.trim();
         const nipStr = item.peg_nip ? String(item.peg_nip) : "";
         const unitKerja = item.unit_org_induk_nm || "";
-
         const searchLower = searchTerm.toLowerCase();
 
         return (
@@ -101,20 +104,20 @@ export default function Tubel({ activeTab, onTabChange }: TubelProps) {
     const handlePerbaiki = async (id: string, keterangan: string) => {
         try {
             await tubelService.updateStatus(id, 'perbaikan', keterangan);
+            showSuccess('Pengajuan berhasil dikembalikan untuk perbaikan');
             refreshData();
         } catch (err) {
-            console.error("Error updating status:", err);
-            alert("Gagal mengirim perbaikan");
+            showError("Gagal mengirim perbaikan");
         }
     };
 
     const handleTolak = async (id: string, alasan: string) => {
         try {
             await tubelService.updateStatus(id, 'ditolak', alasan);
+            showSuccess('Pengajuan berhasil ditolak');
             refreshData();
         } catch (err) {
-            console.error("Error updating status:", err);
-            alert("Gagal menolak pengajuan");
+            showError("Gagal menolak pengajuan");
         }
     };
 
@@ -122,20 +125,36 @@ export default function Tubel({ activeTab, onTabChange }: TubelProps) {
         try {
             const status = isTembusan ? 'selesai' : 'diterima';
             await tubelService.updateStatus(id, status);
+            showSuccess('Pengajuan berhasil diterima');
             refreshData();
         } catch (err) {
-            console.error("Error updating status:", err);
-            alert("Gagal menerima pengajuan");
+            showError("Gagal menerima pengajuan");
         }
     };
 
     const handleUpload = async (id: string, file: File) => {
         try {
             await tubelService.uploadBerkas(id, file);
-            refreshData();
+            showSuccess('Berkas berhasil diupload');
+            await refreshData();
+            setModalState(prev => ({ ...prev, upload: false }));
         } catch (err) {
             console.error("Error uploading file:", err);
-            alert("Gagal upload berkas");
+            showError("Gagal upload berkas");
+            throw err;
+        }
+    };
+
+    const handleEditBerkas = async (id: string, oldFile: string, newFile: File) => {
+        const loadingToast = toast.loading('Mengganti berkas...');
+        try {
+            await tubelService.editBerkas(id, oldFile, newFile);
+            toast.success('Berkas berhasil diganti!', { id: loadingToast });
+            await refreshData();
+            setModalState(prev => ({ ...prev, upload: false }));
+        } catch (err) {
+            console.error("Error editing file:", err);
+            toast.error('Gagal mengganti berkas', { id: loadingToast });
             throw err;
         }
     };
@@ -148,6 +167,13 @@ export default function Tubel({ activeTab, onTabChange }: TubelProps) {
 
     const handleLogout = () => {
         console.log("Logout clicked");
+    };
+
+    const getUploadMode = () => {
+        if (selectedData?.file_status_pelayanan) {
+            return 'edit';
+        }
+        return 'upload';
     };
 
     const renderContent = () => {
@@ -350,6 +376,7 @@ export default function Tubel({ activeTab, onTabChange }: TubelProps) {
 
     return (
         <div className="min-h-screen bg-[#F1F5F9]">
+            <Toaster position="top-right" />
             <Navbar
                 activeTab={activeTab}
                 onTabChange={handleLocalTabChange}
@@ -359,7 +386,6 @@ export default function Tubel({ activeTab, onTabChange }: TubelProps) {
             />
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-                {/* Welcome Section dengan DashboardSearchBar Terintegrasi */}
                 <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-3xl p-6 text-white">
                     <div className="mb-4">
                         <h1 className="text-2xl font-black mb-1">
@@ -394,10 +420,8 @@ export default function Tubel({ activeTab, onTabChange }: TubelProps) {
                     />
                 </div>
 
-                {/* Data Content */}
                 {renderContent()}
 
-                {/* Pagination */}
                 {!loading && !error && paginatedData.length > 0 && totalPages > 1 && (
                     <div className="flex justify-center mt-12">
                         <div className="flex items-center gap-2 bg-white p-2 rounded-2xl shadow-sm border border-slate-200">
@@ -425,7 +449,6 @@ export default function Tubel({ activeTab, onTabChange }: TubelProps) {
                 )}
             </main>
 
-            {/* Modals */}
             <DetailModalTubel
                 isOpen={modalState.detail}
                 onClose={() => setModalState(prev => ({ ...prev, detail: false }))}
@@ -454,7 +477,9 @@ export default function Tubel({ activeTab, onTabChange }: TubelProps) {
                 isOpen={modalState.upload}
                 onClose={() => setModalState(prev => ({ ...prev, upload: false }))}
                 onSubmit={handleUpload}
+                onEdit={handleEditBerkas}
                 data={selectedData}
+                mode={getUploadMode()}
             />
         </div>
     );

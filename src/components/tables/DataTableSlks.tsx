@@ -1,5 +1,7 @@
+// src/components/tables/DataTableSlks.tsx
+
 import React, { useState } from 'react';
-import { Eye, Edit, Ban, CheckCircle, Upload, ChevronUp, ChevronDown, Search } from 'lucide-react';
+import { Eye, Edit, Ban, CheckCircle, Upload, ChevronUp, ChevronDown, Loader, FileCheck } from 'lucide-react';
 import { StatusBadge } from '../common/StatusBadge';
 import { formatDateTimeId } from '../../utils/formatters';
 
@@ -27,8 +29,8 @@ export const DataTableSlks: React.FC<DataTableSlksProps> = ({
 }) => {
     const [sortField, setSortField] = useState<SortField>('tanggal');
     const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
-    const [searchColumn, setSearchColumn] = useState('');
     const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
+    const [actionLoading, setActionLoading] = useState<{ type: string; id: string } | null>(null);
 
     const handleSort = (field: SortField) => {
         if (sortField === field) {
@@ -46,6 +48,15 @@ export const DataTableSlks: React.FC<DataTableSlksProps> = ({
     const getSortIcon = (field: SortField) => {
         if (sortField !== field) return <ChevronUp size={14} className="opacity-30" />;
         return sortOrder === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />;
+    };
+
+    const handleAction = async (type: string, id: string, action: () => void | Promise<void>) => {
+        setActionLoading({ type, id });
+        try {
+            await action();
+        } finally {
+            setActionLoading(null);
+        }
     };
 
     const filteredAndSortedData = React.useMemo(() => {
@@ -114,25 +125,11 @@ export const DataTableSlks: React.FC<DataTableSlksProps> = ({
                                 <button onClick={() => handleSort('nama')} className="flex items-center gap-1 hover:text-amber-600">
                                     Nama Pegawai {getSortIcon('nama')}
                                 </button>
-                                {/* <input
-                                    type="text"
-                                    placeholder="Filter..."
-                                    className="mt-1 px-2 py-1 text-xs border rounded w-full"
-                                    value={columnFilters['peg_nama'] || ''}
-                                    onChange={(e) => handleColumnFilter('peg_nama', e.target.value)}
-                                /> */}
                             </th>
                             <th className="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
                                 <button onClick={() => handleSort('nip')} className="flex items-center gap-1 hover:text-amber-600">
                                     NIP {getSortIcon('nip')}
                                 </button>
-                                {/* <input
-                                    type="text"
-                                    placeholder="Filter..."
-                                    className="mt-1 px-2 py-1 text-xs border rounded w-32"
-                                    value={columnFilters['peg_nip'] || ''}
-                                    onChange={(e) => handleColumnFilter('peg_nip', e.target.value)}
-                                /> */}
                             </th>
                             <th className="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
                                 <button onClick={() => handleSort('unit')} className="flex items-center gap-1 hover:text-amber-600">
@@ -148,9 +145,10 @@ export const DataTableSlks: React.FC<DataTableSlksProps> = ({
                                 </button>
                             </th>
                             <th className="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
-                                <button onClick={() => handleSort('status')} className="flex items-center gap-1 hover:text-amber-600">
-                                    Status {getSortIcon('status')}
-                                </button>
+                                Status
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
+                                Berkas
                             </th>
                             <th className="px-4 py-3 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">
                                 Aksi
@@ -161,6 +159,7 @@ export const DataTableSlks: React.FC<DataTableSlksProps> = ({
                         {filteredAndSortedData.map((item, idx) => {
                             const status = item.layanan_status || "pengajuan";
                             const namaLengkap = getNamaLengkap(item);
+                            const isLoading = actionLoading?.id === item.slks_id;
 
                             return (
                                 <tr key={idx} className="hover:bg-slate-50 transition-colors">
@@ -186,10 +185,21 @@ export const DataTableSlks: React.FC<DataTableSlksProps> = ({
                                         <StatusBadge status={status} size="sm" />
                                     </td>
                                     <td className="px-4 py-3">
+                                        {item.file_status_pelayanan ? (
+                                            <div className="flex items-center gap-1 text-[10px] text-green-600 bg-green-50 px-2 py-1 rounded-full w-fit">
+                                                <FileCheck size={10} />
+                                                <span className="truncate max-w-[100px]">{item.file_status_pelayanan}</span>
+                                            </div>
+                                        ) : (
+                                            <span className="text-[10px] text-slate-400">-</span>
+                                        )}
+                                    </td>
+                                    <td className="px-4 py-3">
                                         <div className="flex gap-1 justify-center">
                                             <button
-                                                onClick={() => onDetail(item)}
-                                                className="p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-amber-100 hover:text-amber-600 transition-all"
+                                                onClick={() => handleAction('detail', item.slks_id, () => onDetail(item))}
+                                                disabled={isLoading}
+                                                className="p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-amber-100 hover:text-amber-600 transition-all disabled:opacity-50"
                                                 title="Detail"
                                             >
                                                 <Eye size={14} />
@@ -198,36 +208,60 @@ export const DataTableSlks: React.FC<DataTableSlksProps> = ({
                                             {status === "pengajuan" && (
                                                 <>
                                                     <button
-                                                        onClick={() => onPerbaiki(item)}
-                                                        className="p-1.5 rounded-lg bg-orange-100 text-orange-600 hover:bg-orange-600 hover:text-white transition-all"
+                                                        onClick={() => handleAction('perbaiki', item.slks_id, () => onPerbaiki(item))}
+                                                        disabled={isLoading}
+                                                        className="p-1.5 rounded-lg bg-orange-100 text-orange-600 hover:bg-orange-600 hover:text-white transition-all disabled:opacity-50"
                                                         title="Perbaiki"
                                                     >
-                                                        <Edit size={14} />
+                                                        {actionLoading?.type === 'perbaiki' && isLoading ? (
+                                                            <Loader size={14} className="animate-spin" />
+                                                        ) : (
+                                                            <Edit size={14} />
+                                                        )}
                                                     </button>
                                                     <button
-                                                        onClick={() => onTolak(item)}
-                                                        className="p-1.5 rounded-lg bg-red-100 text-red-600 hover:bg-red-600 hover:text-white transition-all"
+                                                        onClick={() => handleAction('tolak', item.slks_id, () => onTolak(item))}
+                                                        disabled={isLoading}
+                                                        className="p-1.5 rounded-lg bg-red-100 text-red-600 hover:bg-red-600 hover:text-white transition-all disabled:opacity-50"
                                                         title="Tolak"
                                                     >
-                                                        <Ban size={14} />
+                                                        {actionLoading?.type === 'tolak' && isLoading ? (
+                                                            <Loader size={14} className="animate-spin" />
+                                                        ) : (
+                                                            <Ban size={14} />
+                                                        )}
                                                     </button>
                                                     <button
-                                                        onClick={() => onTerima(item.slks_id, false)}
-                                                        className="p-1.5 rounded-lg bg-green-100 text-green-600 hover:bg-green-600 hover:text-white transition-all"
+                                                        onClick={() => handleAction('terima', item.slks_id, () => onTerima(item.slks_id, false))}
+                                                        disabled={isLoading}
+                                                        className="p-1.5 rounded-lg bg-green-100 text-green-600 hover:bg-green-600 hover:text-white transition-all disabled:opacity-50"
                                                         title="Terima"
                                                     >
-                                                        <CheckCircle size={14} />
+                                                        {actionLoading?.type === 'terima' && isLoading ? (
+                                                            <Loader size={14} className="animate-spin" />
+                                                        ) : (
+                                                            <CheckCircle size={14} />
+                                                        )}
                                                     </button>
                                                 </>
                                             )}
 
-                                            {status === "diterima" && (
+                                            {/* Tombol Upload/Ganti untuk status diterima atau selesai */}
+                                            {(status === "diterima" || status === "selesai") && (
                                                 <button
-                                                    onClick={() => onUpload(item)}
-                                                    className="p-1.5 rounded-lg bg-emerald-100 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all"
-                                                    title="Upload Berkas"
+                                                    onClick={() => handleAction('upload', item.slks_id, () => onUpload(item))}
+                                                    disabled={isLoading}
+                                                    className={`p-1.5 rounded-lg transition-all disabled:opacity-50 ${status === "selesai"
+                                                            ? 'bg-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white'
+                                                            : 'bg-emerald-100 text-emerald-600 hover:bg-emerald-600 hover:text-white'
+                                                        }`}
+                                                    title={status === "selesai" ? "Ganti Berkas" : "Upload Berkas"}
                                                 >
-                                                    <Upload size={14} />
+                                                    {actionLoading?.type === 'upload' && isLoading ? (
+                                                        <Loader size={14} className="animate-spin" />
+                                                    ) : (
+                                                        <Upload size={14} />
+                                                    )}
                                                 </button>
                                             )}
                                         </div>
@@ -244,14 +278,6 @@ export const DataTableSlks: React.FC<DataTableSlksProps> = ({
                     <p className="text-slate-500">Tidak ada data yang ditemukan</p>
                 </div>
             )}
-
-            {/* Table footer with info */}
-            {/* <div className="bg-slate-50 px-4 py-3 border-t border-slate-200">
-                <div className="flex justify-between items-center text-xs text-slate-500">
-                    <span>Menampilkan {filteredAndSortedData.length} dari {data.length} data</span>
-                    <span className="font-mono">SLKS - Satya Lencana Karya Satya</span>
-                </div>
-            </div> */}
         </div>
     );
 };

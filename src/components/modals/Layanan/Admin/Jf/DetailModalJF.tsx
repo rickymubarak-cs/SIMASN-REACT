@@ -1,4 +1,5 @@
-// src/components/modals/DetailModalJf.tsx
+// src/components/modals/Layanan/Admin/Jf/DetailModalJf.tsx
+
 import React, { useState } from 'react';
 import {
     X, User, Building, Paperclip, FileCheck, Clock, Info, Briefcase, ChevronDown, ChevronUp,

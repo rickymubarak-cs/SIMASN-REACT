@@ -1,6 +1,7 @@
-// src/components/cards/DataCardTubelDetailed.tsx
-import React from 'react';
-import { GraduationCap, Clock, Eye, Edit, Ban, CheckCircle, Upload, FileCheck, Calendar, Building, MapPin } from 'lucide-react';
+// src/components/cards/Pelayanan/Admin/Tubel/DataCardTubelDetailed.tsx
+
+import React, { useState } from 'react';
+import { GraduationCap, Clock, Eye, Edit, Ban, CheckCircle, Upload, Calendar, Building, FileCheck, Loader } from 'lucide-react';
 import { StatusBadge } from '../../../../common/StatusBadge';
 import { formatDateTimeId } from '../../../../../utils/formatters';
 
@@ -23,14 +24,48 @@ export const DataCardTubelDetailed: React.FC<DataCardTubelDetailedProps> = ({
     onTerima,
     onUpload
 }) => {
-    const status = data.layanan_tubel_status || "pengajuan";
-    const namaLengkap = `${data.peg_gelar_depan || ""} ${data.peg_nama || ""} ${data.peg_gelar_belakang || ""}`.trim();
-    const usiaUsulan = data.layanan_tubel_usia || 0;
+    const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+    const status = data?.layanan_tubel_status || "pengajuan";
+    const namaLengkap = `${data?.peg_gelar_depan || ""} ${data?.peg_nama || ""} ${data?.peg_gelar_belakang || ""}`.trim();
+    const usiaUsulan = data?.layanan_tubel_usia || 0;
+    const unitKerja = data?.unit_org_induk_nm || "-";
+
+    const handleUploadClick = () => {
+        onUpload?.();
+    };
+
+    const handleTerimaClick = async () => {
+        setActionLoading('terima');
+        try {
+            await onTerima?.(data?.layanan_tubel_id, false);
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const handleDetailClick = () => {
+        setActionLoading('detail');
+        onDetail();
+        setActionLoading(null);
+    };
+
+    const handlePerbaikiClick = () => {
+        setActionLoading('perbaiki');
+        onPerbaiki?.();
+        setActionLoading(null);
+    };
+
+    const handleTolakClick = () => {
+        setActionLoading('tolak');
+        onTolak?.();
+        setActionLoading(null);
+    };
 
     const getJenisTubelText = () => {
-        if (data.layanan_tubel_status_pns === "dalam_negeri") {
+        if (data?.layanan_tubel_status_pns === "dalam_negeri") {
             return "Dalam Negeri";
-        } else if (data.layanan_tubel_status_pns === "luar_negeri") {
+        } else if (data?.layanan_tubel_status_pns === "luar_negeri") {
             return "Luar Negeri";
         }
         return "-";
@@ -48,7 +83,7 @@ export const DataCardTubelDetailed: React.FC<DataCardTubelDetailedProps> = ({
                             <h3 className="font-black text-slate-800 text-base uppercase group-hover:text-blue-600 transition-colors">
                                 {namaLengkap || "Tanpa Nama"}
                             </h3>
-                            <p className="text-xs text-slate-500 font-mono">NIP. {data.peg_nip || "-"}</p>
+                            <p className="text-xs text-slate-500 font-mono">NIP. {data?.peg_nip || "-"}</p>
                         </div>
                     </div>
                     <StatusBadge status={status} />
@@ -57,59 +92,79 @@ export const DataCardTubelDetailed: React.FC<DataCardTubelDetailedProps> = ({
                 <div className="grid grid-cols-2 gap-3 mb-4">
                     <div className="flex items-center gap-2 text-xs text-slate-600">
                         <Building size={14} className="text-slate-400" />
-                        <span className="truncate">{data.unit_org_induk_nm || "-"}</span>
+                        <span className="truncate">{unitKerja}</span>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-slate-600">
                         <GraduationCap size={14} className="text-blue-500" />
                         <span>Usia Usulan: {usiaUsulan} tahun</span>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-slate-600">
-                        <MapPin size={14} className="text-slate-400" />
-                        <span>Jenis: {getJenisTubelText()}</span>
+                        <span className="text-blue-500">Jenis: {getJenisTubelText()}</span>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-slate-600">
                         <Calendar size={14} className="text-slate-400" />
-                        <span>{formatDateTimeId(data.layanan_tgl || data.timestamp)}</span>
+                        <span>{formatDateTimeId(data?.timestamp)}</span>
                     </div>
                 </div>
 
+                {data?.file_status_pelayanan && (
+                    <div className="mb-4">
+                        <div className="inline-flex items-center gap-1.5 text-[10px] text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                            <FileCheck size={12} />
+                            <span>Berkas sudah diupload: {data.file_status_pelayanan}</span>
+                        </div>
+                    </div>
+                )}
+
                 <div className="flex gap-2 pt-3 border-t border-slate-100">
                     <button
-                        onClick={onDetail}
-                        className="flex-1 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-blue-100 hover:text-blue-700 transition-all flex items-center justify-center gap-2"
+                        onClick={handleDetailClick}
+                        disabled={actionLoading === 'detail'}
+                        className="flex-1 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-blue-100 hover:text-blue-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <Eye size={14} /> Detail Lengkap
+                        {actionLoading === 'detail' ? <Loader size={14} className="animate-spin" /> : <Eye size={14} />}
+                        Detail Lengkap
+                    </button>
+
+                    <button
+                        onClick={handlePerbaikiClick}
+                        disabled={actionLoading === 'perbaiki'}
+                        className="py-2 px-4 rounded-xl text-xs font-bold bg-orange-100 text-orange-700 hover:bg-orange-600 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                    >
+                        {actionLoading === 'perbaiki' ? <Loader size={14} className="animate-spin" /> : <Edit size={14} />}
                     </button>
 
                     {status === "pengajuan" && (
                         <>
                             <button
-                                onClick={onPerbaiki}
-                                className="py-2 px-4 rounded-xl text-xs font-bold bg-orange-100 text-orange-700 hover:bg-orange-600 hover:text-white transition-all"
+                                onClick={handleTolakClick}
+                                disabled={actionLoading === 'tolak'}
+                                className="py-2 px-4 rounded-xl text-xs font-bold bg-red-100 text-red-700 hover:bg-red-600 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                             >
-                                <Edit size={14} />
+                                {actionLoading === 'tolak' ? <Loader size={14} className="animate-spin" /> : <Ban size={14} />}
                             </button>
                             <button
-                                onClick={onTolak}
-                                className="py-2 px-4 rounded-xl text-xs font-bold bg-red-100 text-red-700 hover:bg-red-600 hover:text-white transition-all"
+                                onClick={handleTerimaClick}
+                                disabled={actionLoading === 'terima'}
+                                className="flex-1 py-2 rounded-xl text-xs font-bold bg-green-100 text-green-700 hover:bg-green-600 hover:text-white transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <Ban size={14} />
-                            </button>
-                            <button
-                                onClick={() => onTerima?.(data.layanan_tubel_id, false)}
-                                className="flex-1 py-2 rounded-xl text-xs font-bold bg-green-100 text-green-700 hover:bg-green-600 hover:text-white transition-all flex items-center justify-center gap-2"
-                            >
-                                <CheckCircle size={14} /> Terima
+                                {actionLoading === 'terima' ? <Loader size={14} className="animate-spin" /> : <CheckCircle size={14} />}
+                                Terima
                             </button>
                         </>
                     )}
 
-                    {status === "diterima" && (
+                    {(status === "diterima" || status === "selesai") && (
                         <button
-                            onClick={onUpload}
-                            className="flex-1 py-2 rounded-xl text-xs font-bold bg-emerald-100 text-emerald-700 hover:bg-emerald-600 hover:text-white transition-all flex items-center justify-center gap-2"
+                            onClick={handleUploadClick}
+                            className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${status === "selesai"
+                                    ? 'bg-blue-100 text-blue-700 hover:bg-blue-600 hover:text-white'
+                                    : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-600 hover:text-white'
+                                }`}
+                            title={status === "selesai" ? "Ganti Berkas" : "Upload Berkas"}
                         >
-                            <Upload size={14} /> Upload Berkas
+                            <Upload size={14} />
+                            {status === "selesai" ? "Ganti Berkas" : "Upload Berkas"}
                         </button>
                     )}
                 </div>

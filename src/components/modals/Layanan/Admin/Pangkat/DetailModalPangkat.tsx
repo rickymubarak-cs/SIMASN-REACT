@@ -1,4 +1,5 @@
-// src/components/modals/DetailModalPangkat.tsx
+// src/components/modals/Layanan/Admin/Pangkat/DetailModalPangkat.tsx
+
 import React, { useState } from 'react';
 import {
     X, User, Building, Paperclip, FileCheck, Clock, Info, TrendingUp, ChevronDown, ChevronUp,
@@ -18,7 +19,6 @@ interface DetailModalPangkatProps {
 const BASE_URL_FOTO = "https://simasn.pontianak.go.id/assets/berkas/profil/";
 const BASE_URL_BERKAS = "https://simasn.pontianak.go.id/assets/berkas/Layanan/Pangkat/";
 
-// Map icon untuk file
 const fileIconMap: Record<string, any> = {
     Mail: Mail,
     FileSignature: FileSignature,
@@ -32,10 +32,10 @@ const fileIconMap: Record<string, any> = {
     ScrollText: ScrollText,
     ShieldCheck: ShieldCheck,
     BookOpen: BookOpen,
-    TrendingUp: TrendingUp
+    TrendingUp: TrendingUp,
+    Paperclip: Paperclip
 };
 
-// Map warna untuk badge
 const colorMap: Record<string, string> = {
     green: 'bg-green-50 text-green-600 border-green-200',
     blue: 'bg-blue-50 text-blue-600 border-blue-200',
@@ -47,7 +47,9 @@ const colorMap: Record<string, string> = {
     teal: 'bg-teal-50 text-teal-600 border-teal-200',
     rose: 'bg-rose-50 text-rose-600 border-rose-200',
     emerald: 'bg-emerald-50 text-emerald-600 border-emerald-200',
-    pink: 'bg-pink-50 text-pink-600 border-pink-200'
+    pink: 'bg-pink-50 text-pink-600 border-pink-200',
+    red: 'bg-red-50 text-red-600 border-red-200',
+    gray: 'bg-gray-50 text-gray-600 border-gray-200'
 };
 
 export const DetailModalPangkat: React.FC<DetailModalPangkatProps> = ({
@@ -69,6 +71,7 @@ export const DetailModalPangkat: React.FC<DetailModalPangkatProps> = ({
     const initials = getInitials(namaLengkap);
     const status = data.layanan_status || "pengajuan";
     const jenisKp = data.lay_kp_jenis || "-";
+    const golongan = data.gol_id || "-";
 
     const availableFiles = pangkatFileConfig
         .filter(fileConfig => data[fileConfig.key] && data[fileConfig.key].trim() !== "")
@@ -193,7 +196,7 @@ export const DetailModalPangkat: React.FC<DetailModalPangkatProps> = ({
                                         </div>
                                         <div>
                                             <p className="text-[10px] text-slate-400">Golongan Ruang</p>
-                                            <p className="font-medium text-slate-700 text-sm">{data.gol_id || "-"}</p>
+                                            <p className="font-medium text-slate-700 text-sm">{golongan}</p>
                                         </div>
                                         <div>
                                             <p className="text-[10px] text-slate-400">Tanggal Pengajuan</p>

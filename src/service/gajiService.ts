@@ -23,16 +23,11 @@ export interface GajiData {
     [key: string]: any;
 }
 
-// ==============================================
-// BASE URL UNTUK BERKAS - TETAP PAKAI SERVER LAMA
-// ==============================================
-
 const BASE_URL_OLD = "https://simasn.pontianak.go.id";
 const BASE_URL_BERKAS = `${BASE_URL_OLD}/assets/berkas/Layanan/Berkala/`;
 const BASE_URL_BERKAS_ADMIN = `${BASE_URL_OLD}/assets/berkas/layanan_admin/berkala/`;
 const BASE_URL_FOTO = `${BASE_URL_OLD}/assets/berkas/profil/`;
 
-// Konfigurasi file untuk Gaji Berkala
 export const gajiFileConfig = [
     { key: 'file_pengantar', label: 'Surat Pengantar', icon: 'Mail', color: 'teal' },
     { key: 'file_skp', label: 'SKP 2 Tahun Terakhir', icon: 'FileCheck', color: 'blue' },
@@ -42,25 +37,17 @@ export const gajiFileConfig = [
     { key: 'file_sk_pangkat', label: 'SK Pangkat Terakhir', icon: 'Award', color: 'amber' },
 ];
 
-// ==============================================
-// GAJI SERVICE - DISESUAIKAN DENGAN API LARAVEL
-// ==============================================
-
 export const gajiService = {
-    // Get all Gaji data
     getAll: async (perangkatDaerah: string = ""): Promise<GajiData[]> => {
         try {
             const url = perangkatDaerah ? `api/gaji/${perangkatDaerah}` : 'api/gaji';
             const response = await API.get(url);
-            console.log('Gaji API Response:', response.data);
 
             if (response.data?.status === 'success' && response.data?.gaji) {
                 const gajiData = response.data.gaji;
-
                 if (Array.isArray(gajiData)) {
                     return gajiData.map((item: any) => {
                         const processedItem: any = { ...item };
-
                         gajiFileConfig.forEach(fileConfig => {
                             const fileValue = item[fileConfig.key];
                             if (fileValue && fileValue.trim() !== '') {
@@ -69,20 +56,16 @@ export const gajiService = {
                                 processedItem[`${fileConfig.key}_url`] = null;
                             }
                         });
-
                         processedItem.file_status_pelayanan_url = item.file_status_pelayanan
                             ? `${BASE_URL_BERKAS_ADMIN}${item.file_status_pelayanan}`
                             : null;
-
                         processedItem.foto_url = item.foto
                             ? `${BASE_URL_FOTO}${item.foto}`
                             : null;
-
                         return processedItem;
                     });
                 }
             }
-
             return [];
         } catch (error) {
             console.error('Error fetching Gaji data:', error);
@@ -90,40 +73,6 @@ export const gajiService = {
         }
     },
 
-    // Get detail by ID
-    getById: async (id: string): Promise<GajiData | null> => {
-        try {
-            const response = await API.get(`api/gaji/detail/${id}`);
-
-            if (response.data?.status === 'success' && response.data?.gaji) {
-                const item = response.data.gaji;
-
-                const processedItem: any = { ...item };
-                gajiFileConfig.forEach(fileConfig => {
-                    const fileValue = item[fileConfig.key];
-                    if (fileValue && fileValue.trim() !== '') {
-                        processedItem[`${fileConfig.key}_url`] = `${BASE_URL_BERKAS}${fileValue}`;
-                    } else {
-                        processedItem[`${fileConfig.key}_url`] = null;
-                    }
-                });
-                processedItem.file_status_pelayanan_url = item.file_status_pelayanan
-                    ? `${BASE_URL_BERKAS_ADMIN}${item.file_status_pelayanan}`
-                    : null;
-                processedItem.foto_url = item.foto
-                    ? `${BASE_URL_FOTO}${item.foto}`
-                    : null;
-
-                return processedItem;
-            }
-            return null;
-        } catch (error) {
-            console.error('Error fetching Gaji detail:', error);
-            throw error;
-        }
-    },
-
-    // Update status (terima, tolak, perbaiki)
     updateStatus: async (id: string, status: string, keterangan?: string): Promise<any> => {
         try {
             let endpoint = '';
@@ -155,7 +104,6 @@ export const gajiService = {
             } else {
                 response = await API.put(endpoint, data);
             }
-
             return response.data;
         } catch (error) {
             console.error('Error updating Gaji status:', error);
@@ -163,17 +111,14 @@ export const gajiService = {
         }
     },
 
-    // Upload berkas hasil
     uploadBerkas: async (id: string, file: File): Promise<any> => {
         try {
             const formData = new FormData();
             formData.append('file_status_pelayanan', file);
-            formData.append('gaji_id', id);
-
+            formData.append('layanan_gaji_id', id);
             const response = await API.post(`api/gaji/${id}/upload`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
-
             return response.data;
         } catch (error) {
             console.error('Error uploading Gaji file:', error);
@@ -181,22 +126,32 @@ export const gajiService = {
         }
     },
 
-    // Edit berkas hasil
     editBerkas: async (id: string, oldFile: string, newFile: File): Promise<any> => {
         try {
             const formData = new FormData();
             formData.append('file_status_pelayanan', newFile);
-            formData.append('gaji_id', id);
             formData.append('old_file_status_pelayanan', oldFile);
-            formData.append('_method', 'PUT');
 
-            const response = await API.post(`api/gaji/${id}/berkas`, formData, {
+            const response = await API.post(`api/gaji/${id}/edit-berkas`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
 
             return response.data;
         } catch (error) {
             console.error('Error editing Gaji file:', error);
+            throw error;
+        }
+    },
+
+    getDetail: async (id: string): Promise<GajiData | null> => {
+        try {
+            const response = await API.get(`api/gaji/detail/${id}`);
+            if (response.data?.status === 'success' && response.data?.gaji) {
+                return response.data.gaji;
+            }
+            return null;
+        } catch (error) {
+            console.error('Error fetching Gaji detail:', error);
             throw error;
         }
     }

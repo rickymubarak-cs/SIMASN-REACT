@@ -1,6 +1,8 @@
-// src/pages/PltPlh.tsx
+// src/pages/Pltplh.tsx
+
 import React, { useState, useEffect } from 'react';
 import { AlertCircle, UserCog } from 'lucide-react';
+import { toast, Toaster } from 'react-hot-toast';
 import { usePltplhData } from '../hooks/usePltplhData';
 import { Navbar } from '../components/layout/Navbar';
 import { DashboardSearchBar } from '../components/layout/DashboardSearchBar';
@@ -13,15 +15,16 @@ import { ActionModal } from '../components/modals/ActionModal';
 import { UploadModalPltplh } from '../components/modals/Layanan/Admin/Pltplh/UploadModalPltplh';
 import { SkeletonLoading } from '../components/common/SkeletonLoading';
 import { pltplhService } from '../service/pltplhService';
+import { showSuccess, showError } from '../components/common/Toast';
 
 type ViewMode = 'standard' | 'compact' | 'detailed' | 'table';
 
-interface PltPlhProps {
+interface PltplhProps {
     activeTab: string;
     onTabChange: (tab: string) => void;
 }
 
-export default function PltPlh({ activeTab, onTabChange }: PltPlhProps) {
+export default function Pltplh({ activeTab, onTabChange }: PltplhProps) {
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedData, setSelectedData] = useState(null);
@@ -51,7 +54,6 @@ export default function PltPlh({ activeTab, onTabChange }: PltPlhProps) {
         const namaLengkap = `${item.peg_gelar_depan || ""} ${item.peg_nama || ""} ${item.peg_gelar_belakang || ""}`.trim();
         const nipStr = item.peg_nip ? String(item.peg_nip) : "";
         const unitKerja = item.unit_org_induk_nm || "";
-
         const searchLower = searchTerm.toLowerCase();
 
         return (
@@ -102,20 +104,20 @@ export default function PltPlh({ activeTab, onTabChange }: PltPlhProps) {
     const handlePerbaiki = async (id: string, keterangan: string) => {
         try {
             await pltplhService.updateStatus(id, 'perbaikan', keterangan);
+            showSuccess('Pengajuan berhasil dikembalikan untuk perbaikan');
             refreshData();
         } catch (err) {
-            console.error("Error updating status:", err);
-            alert("Gagal mengirim perbaikan");
+            showError("Gagal mengirim perbaikan");
         }
     };
 
     const handleTolak = async (id: string, alasan: string) => {
         try {
             await pltplhService.updateStatus(id, 'ditolak', alasan);
+            showSuccess('Pengajuan berhasil ditolak');
             refreshData();
         } catch (err) {
-            console.error("Error updating status:", err);
-            alert("Gagal menolak pengajuan");
+            showError("Gagal menolak pengajuan");
         }
     };
 
@@ -123,20 +125,36 @@ export default function PltPlh({ activeTab, onTabChange }: PltPlhProps) {
         try {
             const status = isTembusan ? 'selesai' : 'diterima';
             await pltplhService.updateStatus(id, status);
+            showSuccess('Pengajuan berhasil diterima');
             refreshData();
         } catch (err) {
-            console.error("Error updating status:", err);
-            alert("Gagal menerima pengajuan");
+            showError("Gagal menerima pengajuan");
         }
     };
 
     const handleUpload = async (id: string, file: File) => {
         try {
             await pltplhService.uploadBerkas(id, file);
-            refreshData();
+            showSuccess('Berkas berhasil diupload');
+            await refreshData();
+            setModalState(prev => ({ ...prev, upload: false }));
         } catch (err) {
             console.error("Error uploading file:", err);
-            alert("Gagal upload berkas");
+            showError("Gagal upload berkas");
+            throw err;
+        }
+    };
+
+    const handleEditBerkas = async (id: string, oldFile: string, newFile: File) => {
+        const loadingToast = toast.loading('Mengganti berkas...');
+        try {
+            await pltplhService.editBerkas(id, oldFile, newFile);
+            toast.success('Berkas berhasil diganti!', { id: loadingToast });
+            await refreshData();
+            setModalState(prev => ({ ...prev, upload: false }));
+        } catch (err) {
+            console.error("Error editing file:", err);
+            toast.error('Gagal mengganti berkas', { id: loadingToast });
             throw err;
         }
     };
@@ -149,6 +167,13 @@ export default function PltPlh({ activeTab, onTabChange }: PltPlhProps) {
 
     const handleLogout = () => {
         console.log("Logout clicked");
+    };
+
+    const getUploadMode = () => {
+        if (selectedData?.file_status_pelayanan) {
+            return 'edit';
+        }
+        return 'upload';
     };
 
     const renderContent = () => {
@@ -223,7 +248,7 @@ export default function PltPlh({ activeTab, onTabChange }: PltPlhProps) {
                     </p>
                     <button
                         onClick={refreshData}
-                        className="mt-6 px-6 py-2 bg-blue-500 text-white rounded-xl text-sm font-bold hover:bg-blue-600 transition-colors"
+                        className="mt-6 px-6 py-2 bg-emerald-500 text-white rounded-xl text-sm font-bold hover:bg-emerald-600 transition-colors"
                     >
                         Refresh Data
                     </button>
@@ -351,6 +376,7 @@ export default function PltPlh({ activeTab, onTabChange }: PltPlhProps) {
 
     return (
         <div className="min-h-screen bg-[#F1F5F9]">
+            <Toaster position="top-right" />
             <Navbar
                 activeTab={activeTab}
                 onTabChange={handleLocalTabChange}
@@ -360,18 +386,16 @@ export default function PltPlh({ activeTab, onTabChange }: PltPlhProps) {
             />
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-                {/* Welcome Section dengan DashboardSearchBar Terintegrasi */}
-                <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-3xl p-6 text-white">
+                <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 rounded-3xl p-6 text-white">
                     <div className="mb-4">
                         <h1 className="text-2xl font-black mb-1">
                             Pelaksana Tugas (PLT) / Pejabat Laksana Harian (PLH)
                         </h1>
-                        <p className="text-blue-100 text-sm">
-                            Kelola dan pantau pengajuan usulan Pelaksana Tugas (PLT) dan Pejabat Laksana Harian (PLH) pegawai
+                        <p className="text-emerald-100 text-sm">
+                            Kelola dan pantau pengajuan usulan Pelaksana Tugas (PLT) dan Pejabat Laksana Harian (PLH)
                         </p>
                     </div>
 
-                    {/* DashboardSearchBar dengan cards yang sudah didefinisikan */}
                     <DashboardSearchBar
                         searchTerm={searchTerm}
                         onSearchChange={(value) => {
@@ -390,16 +414,14 @@ export default function PltPlh({ activeTab, onTabChange }: PltPlhProps) {
                             setCurrentPage(1);
                         }}
                         itemCount={filteredData.length}
-                        variant="tubel"
+                        variant="pltplh"
                         placeholder="Cari berdasarkan NIP atau Nama Pegawai..."
                         buttonText="Cari"
                     />
                 </div>
 
-                {/* Data Content */}
                 {renderContent()}
 
-                {/* Pagination */}
                 {!loading && !error && paginatedData.length > 0 && totalPages > 1 && (
                     <div className="flex justify-center mt-12">
                         <div className="flex items-center gap-2 bg-white p-2 rounded-2xl shadow-sm border border-slate-200">
@@ -427,7 +449,6 @@ export default function PltPlh({ activeTab, onTabChange }: PltPlhProps) {
                 )}
             </main>
 
-            {/* Modals */}
             <DetailModalPltplh
                 isOpen={modalState.detail}
                 onClose={() => setModalState(prev => ({ ...prev, detail: false }))}
@@ -456,7 +477,9 @@ export default function PltPlh({ activeTab, onTabChange }: PltPlhProps) {
                 isOpen={modalState.upload}
                 onClose={() => setModalState(prev => ({ ...prev, upload: false }))}
                 onSubmit={handleUpload}
+                onEdit={handleEditBerkas}
                 data={selectedData}
+                mode={getUploadMode()}
             />
         </div>
     );

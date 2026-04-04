@@ -14,7 +14,6 @@ export interface PangkatData {
     layanan_tgl?: string;
     timestamp?: string;
     keterangan?: string;
-    // File-file Pangkat
     file_layPangkat_pak?: string;
     file_layPangkat_SkJF?: string;
     file_layPangkat_kPAK?: string;
@@ -33,23 +32,18 @@ export interface PangkatData {
     [key: string]: any;
 }
 
-// ==============================================
-// BASE URL UNTUK BERKAS - TETAP PAKAI SERVER LAMA
-// ==============================================
-
 const BASE_URL_OLD = "https://simasn.pontianak.go.id";
 const BASE_URL_BERKAS = `${BASE_URL_OLD}/assets/berkas/Layanan/KenaikanPangkat/`;
 const BASE_URL_BERKAS_ADMIN = `${BASE_URL_OLD}/assets/berkas/layanan_admin/pangkat/`;
 const BASE_URL_FOTO = `${BASE_URL_OLD}/assets/berkas/profil/`;
 
-// Konfigurasi file untuk Pangkat
 export const pangkatFileConfig = [
     { key: 'file_layPangkat_pak', label: 'PAK (Penilaian Angka Kredit)', icon: 'FileCheck', color: 'blue' },
     { key: 'file_layPangkat_SkJF', label: 'SK Jabatan Fungsional', icon: 'Briefcase', color: 'cyan' },
     { key: 'file_layPangkat_kPAK', label: 'KPAK', icon: 'FileText', color: 'indigo' },
     { key: 'file_skpg', label: 'SKPG', icon: 'FileCheck', color: 'green' },
     { key: 'file_layPangkat_ijazah', label: 'Ijazah Terakhir', icon: 'GraduationCap', color: 'purple' },
-    { key: 'file_layPangkat_transkipnilai', label: 'Transkrip Nilai', icon: 'ScrollText', color: 'amber' },
+    { key: 'file_layPangkat_transkipnilai', label: 'Transkrip Nilai', icon: 'FileText', color: 'amber' },
     { key: 'file_layPangkat_uraiantugas', label: 'Uraian Tugas', icon: 'FileText', color: 'orange' },
     { key: 'file_layPangkat_dikti', label: 'Forlap Dikti', icon: 'Database', color: 'teal' },
     { key: 'file_layPangkat_akreditasi', label: 'Akreditasi Prodi', icon: 'Award', color: 'rose' },
@@ -59,27 +53,17 @@ export const pangkatFileConfig = [
     { key: 'file_jabatan', label: 'SK Jabatan', icon: 'Briefcase', color: 'cyan' },
 ];
 
-// ==============================================
-// PANGKAT SERVICE
-// ==============================================
-
 export const pangkatService = {
     getAll: async (perangkatDaerah: string = ""): Promise<PangkatData[]> => {
         try {
-            const url = perangkatDaerah
-                ? `api/pangkat/${perangkatDaerah}`
-                : 'api/pangkat';
-
+            const url = perangkatDaerah ? `api/pangkat/${perangkatDaerah}` : 'api/pangkat';
             const response = await API.get(url);
-            console.log('Pangkat API Response:', response.data);
 
             if (response.data?.status === 'success' && response.data?.pangkat) {
                 const pangkatData = response.data.pangkat;
-
                 if (Array.isArray(pangkatData)) {
                     return pangkatData.map((item: any) => {
                         const processedItem: any = { ...item };
-
                         pangkatFileConfig.forEach(fileConfig => {
                             const fileValue = item[fileConfig.key];
                             if (fileValue && fileValue.trim() !== '') {
@@ -88,55 +72,19 @@ export const pangkatService = {
                                 processedItem[`${fileConfig.key}_url`] = null;
                             }
                         });
-
                         processedItem.file_status_pelayanan_url = item.file_status_pelayanan
                             ? `${BASE_URL_BERKAS_ADMIN}${item.file_status_pelayanan}`
                             : null;
-
                         processedItem.foto_url = item.foto
                             ? `${BASE_URL_FOTO}${item.foto}`
                             : null;
-
                         return processedItem;
                     });
                 }
             }
-
             return [];
         } catch (error) {
             console.error('Error fetching Pangkat data:', error);
-            throw error;
-        }
-    },
-
-    getById: async (id: string): Promise<PangkatData | null> => {
-        try {
-            const response = await API.get(`api/pangkat/detail/${id}`);
-
-            if (response.data?.status === 'success' && response.data?.pangkat) {
-                const item = response.data.pangkat;
-
-                const processedItem: any = { ...item };
-                pangkatFileConfig.forEach(fileConfig => {
-                    const fileValue = item[fileConfig.key];
-                    if (fileValue && fileValue.trim() !== '') {
-                        processedItem[`${fileConfig.key}_url`] = `${BASE_URL_BERKAS}${fileValue}`;
-                    } else {
-                        processedItem[`${fileConfig.key}_url`] = null;
-                    }
-                });
-                processedItem.file_status_pelayanan_url = item.file_status_pelayanan
-                    ? `${BASE_URL_BERKAS_ADMIN}${item.file_status_pelayanan}`
-                    : null;
-                processedItem.foto_url = item.foto
-                    ? `${BASE_URL_FOTO}${item.foto}`
-                    : null;
-
-                return processedItem;
-            }
-            return null;
-        } catch (error) {
-            console.error('Error fetching Pangkat detail:', error);
             throw error;
         }
     },
@@ -172,7 +120,6 @@ export const pangkatService = {
             } else {
                 response = await API.put(endpoint, data);
             }
-
             return response.data;
         } catch (error) {
             console.error('Error updating Pangkat status:', error);
@@ -184,12 +131,10 @@ export const pangkatService = {
         try {
             const formData = new FormData();
             formData.append('file_status_pelayanan', file);
-            formData.append('pangkat_id', id);
-
+            formData.append('layanan_id', id);
             const response = await API.post(`api/pangkat/${id}/upload`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
-
             return response.data;
         } catch (error) {
             console.error('Error uploading Pangkat file:', error);
@@ -201,17 +146,28 @@ export const pangkatService = {
         try {
             const formData = new FormData();
             formData.append('file_status_pelayanan', newFile);
-            formData.append('pangkat_id', id);
             formData.append('old_file_status_pelayanan', oldFile);
-            formData.append('_method', 'PUT');
 
-            const response = await API.post(`api/pangkat/${id}/berkas`, formData, {
+            const response = await API.post(`api/pangkat/${id}/edit-berkas`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
 
             return response.data;
         } catch (error) {
             console.error('Error editing Pangkat file:', error);
+            throw error;
+        }
+    },
+
+    getDetail: async (id: string): Promise<PangkatData | null> => {
+        try {
+            const response = await API.get(`api/pangkat/detail/${id}`);
+            if (response.data?.status === 'success' && response.data?.pangkat) {
+                return response.data.pangkat;
+            }
+            return null;
+        } catch (error) {
+            console.error('Error fetching Pangkat detail:', error);
             throw error;
         }
     }

@@ -1,4 +1,5 @@
-// src/components/modals/DetailModalCuti.tsx
+// src/components/modals/Layanan/Admin/Cuti/DetailModalCuti.tsx
+
 import React, { useState } from 'react';
 import {
     X, User, Building, Paperclip, FileCheck, Clock, Info, Calendar, ChevronDown, ChevronUp,

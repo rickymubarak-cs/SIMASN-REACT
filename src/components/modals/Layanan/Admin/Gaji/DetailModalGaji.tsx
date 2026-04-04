@@ -1,4 +1,5 @@
-// src/components/modals/DetailModalGaji.tsx
+// src/components/modals/Layanan/Admin/Gaji/DetailModalGaji.tsx
+
 import React, { useState } from 'react';
 import {
     X, User, Building, Paperclip, FileCheck, Clock, Info, DollarSign, ChevronDown, ChevronUp,

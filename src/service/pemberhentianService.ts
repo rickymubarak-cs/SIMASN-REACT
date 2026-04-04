@@ -13,7 +13,6 @@ export interface PemberhentianData {
     layanan_pemberhentian_status?: string;
     timestamp?: string;
     keterangan?: string;
-    // File-file Pemberhentian
     file_form_permintaan?: string;
     file_karpeg?: string;
     file_sk_cpns?: string;
@@ -49,16 +48,11 @@ export interface PemberhentianData {
     [key: string]: any;
 }
 
-// ==============================================
-// BASE URL UNTUK BERKAS - TETAP PAKAI SERVER LAMA
-// ==============================================
-
 const BASE_URL_OLD = "https://simasn.pontianak.go.id";
 const BASE_URL_BERKAS = `${BASE_URL_OLD}/assets/berkas/Layanan/Pemberhentian/`;
 const BASE_URL_BERKAS_ADMIN = `${BASE_URL_OLD}/assets/berkas/layanan_admin/pemberhentian/`;
 const BASE_URL_FOTO = `${BASE_URL_OLD}/assets/berkas/profil/`;
 
-// Konfigurasi file untuk Pemberhentian ASN
 export const pemberhentianFileConfig = [
     { key: 'file_form_permintaan', label: 'Form Permintaan', icon: 'FileText', color: 'rose' },
     { key: 'file_karpeg', label: 'KARPEG', icon: 'IdCard', color: 'blue' },
@@ -80,25 +74,17 @@ export const pemberhentianFileConfig = [
     { key: 'file_pengantar', label: 'Surat Pengantar', icon: 'Mail', color: 'emerald' },
 ];
 
-// ==============================================
-// PEMBERHENTIAN SERVICE - DISESUAIKAN DENGAN API LARAVEL
-// ==============================================
-
 export const pemberhentianService = {
-    // Get all Pemberhentian data
     getAll: async (perangkatDaerah: string = ""): Promise<PemberhentianData[]> => {
         try {
             const url = perangkatDaerah ? `api/pemberhentian/${perangkatDaerah}` : 'api/pemberhentian';
             const response = await API.get(url);
-            console.log('Pemberhentian API Response:', response.data);
 
             if (response.data?.status === 'success' && response.data?.pemberhentian) {
                 const pemberhentianData = response.data.pemberhentian;
-
                 if (Array.isArray(pemberhentianData)) {
                     return pemberhentianData.map((item: any) => {
                         const processedItem: any = { ...item };
-
                         pemberhentianFileConfig.forEach(fileConfig => {
                             const fileValue = item[fileConfig.key];
                             if (fileValue && fileValue.trim() !== '') {
@@ -107,20 +93,16 @@ export const pemberhentianService = {
                                 processedItem[`${fileConfig.key}_url`] = null;
                             }
                         });
-
                         processedItem.file_status_pelayanan_url = item.file_status_pelayanan
                             ? `${BASE_URL_BERKAS_ADMIN}${item.file_status_pelayanan}`
                             : null;
-
                         processedItem.foto_url = item.foto
                             ? `${BASE_URL_FOTO}${item.foto}`
                             : null;
-
                         return processedItem;
                     });
                 }
             }
-
             return [];
         } catch (error) {
             console.error('Error fetching Pemberhentian data:', error);
@@ -128,40 +110,6 @@ export const pemberhentianService = {
         }
     },
 
-    // Get detail by ID
-    getById: async (id: string): Promise<PemberhentianData | null> => {
-        try {
-            const response = await API.get(`api/pemberhentian/detail/${id}`);
-
-            if (response.data?.status === 'success' && response.data?.pemberhentian) {
-                const item = response.data.pemberhentian;
-
-                const processedItem: any = { ...item };
-                pemberhentianFileConfig.forEach(fileConfig => {
-                    const fileValue = item[fileConfig.key];
-                    if (fileValue && fileValue.trim() !== '') {
-                        processedItem[`${fileConfig.key}_url`] = `${BASE_URL_BERKAS}${fileValue}`;
-                    } else {
-                        processedItem[`${fileConfig.key}_url`] = null;
-                    }
-                });
-                processedItem.file_status_pelayanan_url = item.file_status_pelayanan
-                    ? `${BASE_URL_BERKAS_ADMIN}${item.file_status_pelayanan}`
-                    : null;
-                processedItem.foto_url = item.foto
-                    ? `${BASE_URL_FOTO}${item.foto}`
-                    : null;
-
-                return processedItem;
-            }
-            return null;
-        } catch (error) {
-            console.error('Error fetching Pemberhentian detail:', error);
-            throw error;
-        }
-    },
-
-    // Update status (terima, tolak, perbaiki)
     updateStatus: async (id: string, status: string, keterangan?: string): Promise<any> => {
         try {
             let endpoint = '';
@@ -193,7 +141,6 @@ export const pemberhentianService = {
             } else {
                 response = await API.put(endpoint, data);
             }
-
             return response.data;
         } catch (error) {
             console.error('Error updating Pemberhentian status:', error);
@@ -201,17 +148,14 @@ export const pemberhentianService = {
         }
     },
 
-    // Upload berkas hasil
     uploadBerkas: async (id: string, file: File): Promise<any> => {
         try {
             const formData = new FormData();
             formData.append('file_status_pelayanan', file);
-            formData.append('pemberhentian_id', id);
-
+            formData.append('layanan_pemberhentian_id', id);
             const response = await API.post(`api/pemberhentian/${id}/upload`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
-
             return response.data;
         } catch (error) {
             console.error('Error uploading Pemberhentian file:', error);
@@ -219,22 +163,32 @@ export const pemberhentianService = {
         }
     },
 
-    // Edit berkas hasil
     editBerkas: async (id: string, oldFile: string, newFile: File): Promise<any> => {
         try {
             const formData = new FormData();
             formData.append('file_status_pelayanan', newFile);
-            formData.append('pemberhentian_id', id);
             formData.append('old_file_status_pelayanan', oldFile);
-            formData.append('_method', 'PUT');
 
-            const response = await API.post(`api/pemberhentian/${id}/berkas`, formData, {
+            const response = await API.post(`api/pemberhentian/${id}/edit-berkas`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
 
             return response.data;
         } catch (error) {
             console.error('Error editing Pemberhentian file:', error);
+            throw error;
+        }
+    },
+
+    getDetail: async (id: string): Promise<PemberhentianData | null> => {
+        try {
+            const response = await API.get(`api/pemberhentian/detail/${id}`);
+            if (response.data?.status === 'success' && response.data?.pemberhentian) {
+                return response.data.pemberhentian;
+            }
+            return null;
+        } catch (error) {
+            console.error('Error fetching Pemberhentian detail:', error);
             throw error;
         }
     }

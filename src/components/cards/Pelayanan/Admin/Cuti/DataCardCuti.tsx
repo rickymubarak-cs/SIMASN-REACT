@@ -1,6 +1,7 @@
-// src/components/cards/DataCardCuti.tsx
-import React from 'react';
-import { Calendar, Clock, Eye, Edit, Ban, CheckCircle, Upload, FileCheck, Building } from 'lucide-react';
+// src/components/cards/Pelayanan/Admin/Cuti/DataCardCuti.tsx
+
+import React, { useState } from 'react';
+import { Calendar, Clock, Eye, Edit, Ban, CheckCircle, Upload, FileCheck, Building, Loader } from 'lucide-react';
 import { StatusBadge } from '../../../../common/StatusBadge';
 import { formatDateTimeId } from '../../../../../utils/formatters';
 import { cutiFileConfig } from '../../../../../service/cutiService';
@@ -24,24 +25,57 @@ export const DataCardCuti: React.FC<DataCardCutiProps> = ({
     onTerima,
     onUpload
 }) => {
-    const status = data.layanan_cuti_status || "pengajuan";
-    const namaLengkap = `${data.peg_gelar_depan || ""} ${data.peg_nama || ""} ${data.peg_gelar_belakang || ""}`.trim();
-    const jenisCuti = data.jenis_cuti || "-";
-    const unitKerja = data.unit_org_induk_nm || "-";
+    const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+    const status = data?.layanan_cuti_status || "pengajuan";
+    const namaLengkap = `${data?.peg_gelar_depan || ""} ${data?.peg_nama || ""} ${data?.peg_gelar_belakang || ""}`.trim();
+    const jenisCuti = data?.jenis_cuti || "-";
+    const unitKerja = data?.unit_org_induk_nm || "-";
 
     const availableFiles = cutiFileConfig.filter(
-        fileConfig => data[fileConfig.key] && data[fileConfig.key].trim() !== ""
+        fileConfig => data?.[fileConfig.key] && data[fileConfig.key].trim() !== ""
     ).length;
+
+    const handleUploadClick = () => {
+        onUpload?.();
+    };
+
+    const handleTerimaClick = async () => {
+        setActionLoading('terima');
+        try {
+            await onTerima?.(data?.layanan_cuti_id, false);
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    const handleDetailClick = () => {
+        setActionLoading('detail');
+        onDetail();
+        setActionLoading(null);
+    };
+
+    const handlePerbaikiClick = () => {
+        setActionLoading('perbaiki');
+        onPerbaiki?.();
+        setActionLoading(null);
+    };
+
+    const handleTolakClick = () => {
+        setActionLoading('tolak');
+        onTolak?.();
+        setActionLoading(null);
+    };
 
     const getJenisCutiBadge = () => {
         if (jenisCuti === "TAHUNAN") {
-            return <span className="text-[9px] text-cyan-600 bg-cyan-50 px-2 py-0.5 rounded-full inline-flex items-center gap-1">Cuti Tahunan</span>;
+            return <span className="text-[9px] text-cyan-600 bg-cyan-50 px-2 py-0.5 rounded-full">Cuti Tahunan</span>;
         } else if (jenisCuti === "SAKIT") {
-            return <span className="text-[9px] text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full inline-flex items-center gap-1">Cuti Sakit</span>;
+            return <span className="text-[9px] text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">Cuti Sakit</span>;
         } else if (jenisCuti === "BESAR") {
-            return <span className="text-[9px] text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full inline-flex items-center gap-1">Cuti Besar</span>;
+            return <span className="text-[9px] text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full">Cuti Besar</span>;
         } else if (jenisCuti === "ALASAN_PENTING") {
-            return <span className="text-[9px] text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full inline-flex items-center gap-1">Cuti Alasan Penting</span>;
+            return <span className="text-[9px] text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">Cuti Alasan Penting</span>;
         }
         return <span className="text-[9px] text-slate-500 bg-slate-50 px-2 py-0.5 rounded-full">{jenisCuti}</span>;
     };
@@ -66,7 +100,7 @@ export const DataCardCuti: React.FC<DataCardCutiProps> = ({
                 </h3>
 
                 <p className="text-[9px] font-bold text-slate-400 font-mono mb-2">
-                    NIP. {data.peg_nip || "-"}
+                    NIP. {data?.peg_nip || "-"}
                 </p>
 
                 <div className="mb-3">
@@ -85,7 +119,7 @@ export const DataCardCuti: React.FC<DataCardCutiProps> = ({
 
                 <div className="flex flex-wrap gap-1 mb-2">
                     {getJenisCutiBadge()}
-                    {data.cTahunan_dalamLuar === "luar" && (
+                    {data?.cTahunan_dalamLuar === "luar" && (
                         <span className="text-[9px] text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full">Cuti Luar Negeri</span>
                     )}
                 </div>
@@ -95,59 +129,81 @@ export const DataCardCuti: React.FC<DataCardCutiProps> = ({
                     {availableFiles} dari {cutiFileConfig.length} Berkas tersedia
                 </p>
 
+                {data?.file_status_pelayanan && (
+                    <div className="mt-2 pt-2 border-t border-slate-100">
+                        <div className="flex items-center gap-1 text-[8px] text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                            <FileCheck size={10} />
+                            <span>Berkas sudah diupload</span>
+                        </div>
+                    </div>
+                )}
+
                 <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-100 text-[9px] font-black text-slate-400 uppercase">
                     <Clock size={10} />
-                    <span>{formatDateTimeId(data.timestamp)}</span>
+                    <span>{formatDateTimeId(data?.timestamp)}</span>
                 </div>
             </div>
 
             <div className="bg-slate-50/50 p-4 space-y-2 border-t border-slate-100">
                 <div className="flex gap-1.5 flex-wrap">
                     <button
-                        onClick={onDetail}
-                        className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl text-[9px] font-bold bg-white border border-cyan-200 text-cyan-600 hover:bg-cyan-600 hover:text-white hover:border-cyan-600 transition-all"
+                        onClick={handleDetailClick}
+                        disabled={actionLoading === 'detail'}
+                        className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl text-[9px] font-bold bg-white border border-cyan-200 text-cyan-600 hover:bg-cyan-600 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <Eye size={12} /> Detail
+                        {actionLoading === 'detail' ? <Loader size={12} className="animate-spin" /> : <Eye size={12} />}
+                        Detail
                     </button>
 
                     <button
-                        onClick={onPerbaiki}
-                        className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl text-[9px] font-bold bg-white border border-orange-200 text-orange-600 hover:bg-orange-600 hover:text-white transition-all"
+                        onClick={handlePerbaikiClick}
+                        disabled={actionLoading === 'perbaiki'}
+                        className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl text-[9px] font-bold bg-white border border-orange-200 text-orange-600 hover:bg-orange-600 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <Edit size={12} /> Perbaiki
+                        {actionLoading === 'perbaiki' ? <Loader size={12} className="animate-spin" /> : <Edit size={12} />}
+                        Perbaiki
                     </button>
 
                     {status === "pengajuan" && (
                         <>
                             <button
-                                onClick={onTolak}
-                                className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl text-[9px] font-bold bg-white border border-red-200 text-red-600 hover:bg-red-600 hover:text-white transition-all"
+                                onClick={handleTolakClick}
+                                disabled={actionLoading === 'tolak'}
+                                className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl text-[9px] font-bold bg-white border border-red-200 text-red-600 hover:bg-red-600 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <Ban size={12} /> Tolak
+                                {actionLoading === 'tolak' ? <Loader size={12} className="animate-spin" /> : <Ban size={12} />}
+                                Tolak
                             </button>
 
                             <button
-                                onClick={() => onTerima?.(data.layanan_cuti_id, false)}
-                                className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl text-[9px] font-bold bg-white border border-green-200 text-green-600 hover:bg-green-600 hover:text-white transition-all"
+                                onClick={handleTerimaClick}
+                                disabled={actionLoading === 'terima'}
+                                className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl text-[9px] font-bold bg-white border border-green-200 text-green-600 hover:bg-green-600 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <CheckCircle size={12} /> Terima
+                                {actionLoading === 'terima' ? <Loader size={12} className="animate-spin" /> : <CheckCircle size={12} />}
+                                Terima
                             </button>
                         </>
                     )}
 
-                    {status === "diterima" && (
+                    {(status === "diterima" || status === "selesai") && (
                         <button
-                            onClick={onUpload}
-                            className="flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl text-[9px] font-bold bg-white border border-cyan-200 text-cyan-600 hover:bg-cyan-600 hover:text-white transition-all"
+                            onClick={handleUploadClick}
+                            className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl text-[9px] font-bold bg-white border transition-all hover:text-white ${status === "selesai"
+                                    ? 'border-cyan-200 text-cyan-600 hover:bg-cyan-600'
+                                    : 'border-emerald-200 text-emerald-600 hover:bg-emerald-600'
+                                }`}
+                            title={status === "selesai" ? "Ganti Berkas" : "Upload Berkas"}
                         >
-                            <Upload size={12} /> Upload
+                            <Upload size={12} />
+                            {status === "selesai" ? "Ganti" : "Upload"}
                         </button>
                     )}
                 </div>
 
                 <div className="flex gap-1 pt-1 flex-wrap">
                     {cutiFileConfig.slice(0, 4).map(fileConfig => (
-                        data[fileConfig.key] && data[fileConfig.key].trim() !== "" && (
+                        data?.[fileConfig.key] && data[fileConfig.key].trim() !== "" && (
                             <span key={fileConfig.key} className="text-[8px] px-2 py-0.5 rounded-full bg-cyan-50 text-cyan-600">
                                 ✓ {fileConfig.label.slice(0, 12)}
                             </span>

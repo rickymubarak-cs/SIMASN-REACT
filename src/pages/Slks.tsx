@@ -1,6 +1,8 @@
-// Slks.tsx
+// src/pages/Slks.tsx
+
 import React, { useState, useEffect } from 'react';
 import { AlertCircle, Award } from 'lucide-react';
+import { toast, Toaster } from 'react-hot-toast'; // Tambahkan toast
 import { useSlksData } from '../hooks/useSlksData';
 import { Navbar } from '../components/layout/Navbar';
 import { DashboardSearchBar } from '../components/layout/DashboardSearchBar';
@@ -13,7 +15,6 @@ import { ActionModal } from '../components/modals/ActionModal';
 import { UploadModalSlks } from '../components/modals/Layanan/Admin/Slks/UploadModalSlks';
 import { SkeletonLoading } from '../components/common/SkeletonLoading';
 import { slksService } from '../service/slksService';
-import { Toaster } from 'react-hot-toast';
 import { showSuccess, showError } from '../components/common/Toast';
 
 type ViewMode = 'standard' | 'compact' | 'detailed' | 'table';
@@ -53,13 +54,11 @@ export default function Slks({ activeTab, onTabChange }: SlksProps) {
         const namaLengkap = `${item.peg_gelar_depan || ""} ${item.peg_nama || ""} ${item.peg_gelar_belakang || ""}`.trim();
         const nipStr = item.peg_nip ? String(item.peg_nip) : "";
         const unitKerja = item.unit_org_induk_nm || "";
-
-        // Search term bisa mencari NIP, Nama, ATAU Unit Kerja
         const searchLower = searchTerm.toLowerCase();
 
         return (
             namaLengkap.toLowerCase().includes(searchLower) ||
-            nipStr.includes(searchTerm) ||  // NIP exact match atau partial
+            nipStr.includes(searchTerm) ||
             unitKerja.toLowerCase().includes(searchLower)
         );
     });
@@ -133,14 +132,11 @@ export default function Slks({ activeTab, onTabChange }: SlksProps) {
         }
     };
 
-    // src/pages/Slks.tsx
-
     const handleUpload = async (id: string, file: File) => {
         try {
             await slksService.uploadBerkas(id, file);
             showSuccess('Berkas berhasil diupload');
-            await refreshData(); // Pastikan data ter-refresh
-            // Tutup modal upload
+            await refreshData();
             setModalState(prev => ({ ...prev, upload: false }));
         } catch (err) {
             console.error("Error uploading file:", err);
@@ -150,11 +146,15 @@ export default function Slks({ activeTab, onTabChange }: SlksProps) {
     };
 
     const handleEditBerkas = async (id: string, oldFile: string, newFile: File) => {
+        console.log('handleEditBerkas called:', { id, oldFile, newFileName: newFile.name });
+
         const loadingToast = toast.loading('Mengganti berkas...');
         try {
-            await slksService.editBerkas(id, oldFile, newFile);
+            const response = await slksService.editBerkas(id, oldFile, newFile);
+            console.log('Edit response:', response);
             toast.success('Berkas berhasil diganti!', { id: loadingToast });
-            refreshData();
+            await refreshData();
+            setModalState(prev => ({ ...prev, upload: false }));
         } catch (err) {
             console.error("Error editing file:", err);
             toast.error('Gagal mengganti berkas', { id: loadingToast });
@@ -170,6 +170,14 @@ export default function Slks({ activeTab, onTabChange }: SlksProps) {
 
     const handleLogout = () => {
         console.log("Logout clicked");
+    };
+
+    // Tentukan mode upload berdasarkan selectedData
+    const getUploadMode = () => {
+        if (selectedData?.file_status_pelayanan) {
+            return 'edit';
+        }
+        return 'upload';
     };
 
     const renderContent = () => {
@@ -382,7 +390,7 @@ export default function Slks({ activeTab, onTabChange }: SlksProps) {
             />
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-                {/* Welcome Section dengan DashboardSearchBar Terintegrasi */}
+                {/* Welcome Section */}
                 <div className="bg-gradient-to-r from-amber-600 to-amber-700 rounded-3xl p-6 text-white">
                     <div className="mb-4">
                         <h1 className="text-2xl font-black mb-1">
@@ -393,7 +401,6 @@ export default function Slks({ activeTab, onTabChange }: SlksProps) {
                         </p>
                     </div>
 
-                    {/* DashboardSearchBar dengan cards yang sudah didefinisikan */}
                     <DashboardSearchBar
                         searchTerm={searchTerm}
                         onSearchChange={(value) => {
@@ -402,8 +409,8 @@ export default function Slks({ activeTab, onTabChange }: SlksProps) {
                         }}
                         onSearch={() => setCurrentPage(1)}
                         loading={loading}
-                        perangkatDaerah={unitKerjaName}  // Kirim nama unit kerja
-                        onPerangkatDaerahChange={setUnitKerjaName}  // Update nama unit kerja
+                        perangkatDaerah={unitKerjaName}
+                        onPerangkatDaerahChange={setUnitKerjaName}
                         showUnitFilter={true}
                         onFilter={refreshData}
                         viewMode={viewMode}
@@ -474,20 +481,14 @@ export default function Slks({ activeTab, onTabChange }: SlksProps) {
                 data={selectedData}
             />
 
+            {/* HANYA SATU UploadModalSlks */}
             <UploadModalSlks
                 isOpen={modalState.upload}
                 onClose={() => setModalState(prev => ({ ...prev, upload: false }))}
                 onSubmit={handleUpload}
+                onEdit={handleEditBerkas}
                 data={selectedData}
-            />
-
-            <UploadModalSlks
-                isOpen={modalState.upload}
-                onClose={() => setModalState(prev => ({ ...prev, upload: false }))}
-                onSubmit={handleUpload}
-                onEdit={handleEditBerkas}  // Tambahkan ini
-                data={selectedData}
-                mode={selectedData?.file_status_pelayanan ? 'edit' : 'upload'}  // Tentukan mode
+                mode={getUploadMode()}
             />
         </div>
     );

@@ -1,6 +1,7 @@
 // src/components/tables/DataTableTubel.tsx
+
 import React, { useState } from 'react';
-import { Eye, Edit, Ban, CheckCircle, Upload, ChevronUp, ChevronDown, GraduationCap } from 'lucide-react';
+import { Eye, Edit, Ban, CheckCircle, Upload, ChevronUp, ChevronDown, Loader, FileCheck, GraduationCap } from 'lucide-react';
 import { StatusBadge } from '../common/StatusBadge';
 import { formatDateTimeId } from '../../utils/formatters';
 
@@ -29,6 +30,7 @@ export const DataTableTubel: React.FC<DataTableTubelProps> = ({
     const [sortField, setSortField] = useState<SortField>('tanggal');
     const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
     const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
+    const [actionLoading, setActionLoading] = useState<{ type: string; id: string } | null>(null);
 
     const handleSort = (field: SortField) => {
         if (sortField === field) {
@@ -39,19 +41,23 @@ export const DataTableTubel: React.FC<DataTableTubelProps> = ({
         }
     };
 
-    const handleColumnFilter = (field: string, value: string) => {
-        setColumnFilters(prev => ({ ...prev, [field]: value }));
-    };
-
     const getSortIcon = (field: SortField) => {
         if (sortField !== field) return <ChevronUp size={14} className="opacity-30" />;
         return sortOrder === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />;
     };
 
+    const handleAction = async (type: string, id: string, action: () => void | Promise<void>) => {
+        setActionLoading({ type, id });
+        try {
+            await action();
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
     const filteredAndSortedData = React.useMemo(() => {
         let filtered = [...data];
 
-        // Apply column filters
         Object.entries(columnFilters).forEach(([field, value]) => {
             if (value) {
                 filtered = filtered.filter(item => {
@@ -61,7 +67,6 @@ export const DataTableTubel: React.FC<DataTableTubelProps> = ({
             }
         });
 
-        // Apply sorting
         filtered.sort((a, b) => {
             let aVal: any, bVal: any;
             switch (sortField) {
@@ -78,8 +83,8 @@ export const DataTableTubel: React.FC<DataTableTubelProps> = ({
                     bVal = b.unit_org_induk_nm || '';
                     break;
                 case 'tanggal':
-                    aVal = a.layanan_tgl || a.timestamp || '';
-                    bVal = b.layanan_tgl || b.timestamp || '';
+                    aVal = a.timestamp || '';
+                    bVal = b.timestamp || '';
                     break;
                 case 'status':
                     aVal = a.layanan_tubel_status || '';
@@ -107,11 +112,11 @@ export const DataTableTubel: React.FC<DataTableTubelProps> = ({
 
     const getJenisTubelBadge = (item: any) => {
         if (item.layanan_tubel_status_pns === "dalam_negeri") {
-            return <span className="text-[9px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Dalam Negeri</span>;
+            return <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Dalam Negeri</span>;
         } else if (item.layanan_tubel_status_pns === "luar_negeri") {
-            return <span className="text-[9px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">Luar Negeri</span>;
+            return <span className="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">Luar Negeri</span>;
         }
-        return <span className="text-[9px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">-</span>;
+        return <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">-</span>;
     };
 
     return (
@@ -120,9 +125,7 @@ export const DataTableTubel: React.FC<DataTableTubelProps> = ({
                 <table className="w-full">
                     <thead className="bg-slate-50 border-b border-slate-200">
                         <tr>
-                            <th className="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider w-12">
-                                #
-                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider w-12">#</th>
                             <th className="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
                                 <button onClick={() => handleSort('nama')} className="flex items-center gap-1 hover:text-blue-600">
                                     Nama Pegawai {getSortIcon('nama')}
@@ -140,7 +143,7 @@ export const DataTableTubel: React.FC<DataTableTubelProps> = ({
                             </th>
                             <th className="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
                                 <button onClick={() => handleSort('usia')} className="flex items-center gap-1 hover:text-blue-600">
-                                    Usia Usulan {getSortIcon('usia')}
+                                    Usia {getSortIcon('usia')}
                                 </button>
                             </th>
                             <th className="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
@@ -152,9 +155,10 @@ export const DataTableTubel: React.FC<DataTableTubelProps> = ({
                                 </button>
                             </th>
                             <th className="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
-                                <button onClick={() => handleSort('status')} className="flex items-center gap-1 hover:text-blue-600">
-                                    Status {getSortIcon('status')}
-                                </button>
+                                Status
+                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">
+                                Berkas
                             </th>
                             <th className="px-4 py-3 text-center text-xs font-bold text-slate-600 uppercase tracking-wider">
                                 Aksi
@@ -165,12 +169,11 @@ export const DataTableTubel: React.FC<DataTableTubelProps> = ({
                         {filteredAndSortedData.map((item, idx) => {
                             const status = item.layanan_tubel_status || "pengajuan";
                             const namaLengkap = getNamaLengkap(item);
+                            const isLoading = actionLoading?.id === item.layanan_tubel_id;
 
                             return (
                                 <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                                    <td className="px-4 py-3 text-sm text-slate-500">
-                                        {startIndex + idx + 1}
-                                    </td>
+                                    <td className="px-4 py-3 text-sm text-slate-500">{startIndex + idx + 1}</td>
                                     <td className="px-4 py-3">
                                         <div className="font-medium text-slate-800 text-sm">{namaLengkap || "-"}</div>
                                     </td>
@@ -187,16 +190,27 @@ export const DataTableTubel: React.FC<DataTableTubelProps> = ({
                                         {getJenisTubelBadge(item)}
                                     </td>
                                     <td className="px-4 py-3 text-xs text-slate-500">
-                                        {formatDateTimeId(item.layanan_tgl || item.timestamp)}
+                                        {formatDateTimeId(item.timestamp)}
                                     </td>
                                     <td className="px-4 py-3">
                                         <StatusBadge status={status} size="sm" />
                                     </td>
                                     <td className="px-4 py-3">
+                                        {item.file_status_pelayanan ? (
+                                            <div className="flex items-center gap-1 text-[10px] text-green-600 bg-green-50 px-2 py-1 rounded-full w-fit">
+                                                <FileCheck size={10} />
+                                                <span className="truncate max-w-[100px]">{item.file_status_pelayanan}</span>
+                                            </div>
+                                        ) : (
+                                            <span className="text-[10px] text-slate-400">-</span>
+                                        )}
+                                    </td>
+                                    <td className="px-4 py-3">
                                         <div className="flex gap-1 justify-center">
                                             <button
-                                                onClick={() => onDetail(item)}
-                                                className="p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-blue-100 hover:text-blue-600 transition-all"
+                                                onClick={() => handleAction('detail', item.layanan_tubel_id, () => onDetail(item))}
+                                                disabled={isLoading}
+                                                className="p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-blue-100 hover:text-blue-600 transition-all disabled:opacity-50"
                                                 title="Detail"
                                             >
                                                 <Eye size={14} />
@@ -205,36 +219,43 @@ export const DataTableTubel: React.FC<DataTableTubelProps> = ({
                                             {status === "pengajuan" && (
                                                 <>
                                                     <button
-                                                        onClick={() => onPerbaiki(item)}
-                                                        className="p-1.5 rounded-lg bg-orange-100 text-orange-600 hover:bg-orange-600 hover:text-white transition-all"
+                                                        onClick={() => handleAction('perbaiki', item.layanan_tubel_id, () => onPerbaiki(item))}
+                                                        disabled={isLoading}
+                                                        className="p-1.5 rounded-lg bg-orange-100 text-orange-600 hover:bg-orange-600 hover:text-white transition-all disabled:opacity-50"
                                                         title="Perbaiki"
                                                     >
-                                                        <Edit size={14} />
+                                                        {actionLoading?.type === 'perbaiki' && isLoading ? <Loader size={14} className="animate-spin" /> : <Edit size={14} />}
                                                     </button>
                                                     <button
-                                                        onClick={() => onTolak(item)}
-                                                        className="p-1.5 rounded-lg bg-red-100 text-red-600 hover:bg-red-600 hover:text-white transition-all"
+                                                        onClick={() => handleAction('tolak', item.layanan_tubel_id, () => onTolak(item))}
+                                                        disabled={isLoading}
+                                                        className="p-1.5 rounded-lg bg-red-100 text-red-600 hover:bg-red-600 hover:text-white transition-all disabled:opacity-50"
                                                         title="Tolak"
                                                     >
-                                                        <Ban size={14} />
+                                                        {actionLoading?.type === 'tolak' && isLoading ? <Loader size={14} className="animate-spin" /> : <Ban size={14} />}
                                                     </button>
                                                     <button
-                                                        onClick={() => onTerima(item.layanan_tubel_id, false)}
-                                                        className="p-1.5 rounded-lg bg-green-100 text-green-600 hover:bg-green-600 hover:text-white transition-all"
+                                                        onClick={() => handleAction('terima', item.layanan_tubel_id, () => onTerima(item.layanan_tubel_id, false))}
+                                                        disabled={isLoading}
+                                                        className="p-1.5 rounded-lg bg-green-100 text-green-600 hover:bg-green-600 hover:text-white transition-all disabled:opacity-50"
                                                         title="Terima"
                                                     >
-                                                        <CheckCircle size={14} />
+                                                        {actionLoading?.type === 'terima' && isLoading ? <Loader size={14} className="animate-spin" /> : <CheckCircle size={14} />}
                                                     </button>
                                                 </>
                                             )}
 
-                                            {status === "diterima" && (
+                                            {(status === "diterima" || status === "selesai") && (
                                                 <button
-                                                    onClick={() => onUpload(item)}
-                                                    className="p-1.5 rounded-lg bg-emerald-100 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all"
-                                                    title="Upload Berkas"
+                                                    onClick={() => handleAction('upload', item.layanan_tubel_id, () => onUpload(item))}
+                                                    disabled={isLoading}
+                                                    className={`p-1.5 rounded-lg transition-all disabled:opacity-50 ${status === "selesai"
+                                                            ? 'bg-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white'
+                                                            : 'bg-emerald-100 text-emerald-600 hover:bg-emerald-600 hover:text-white'
+                                                        }`}
+                                                    title={status === "selesai" ? "Ganti Berkas" : "Upload Berkas"}
                                                 >
-                                                    <Upload size={14} />
+                                                    {actionLoading?.type === 'upload' && isLoading ? <Loader size={14} className="animate-spin" /> : <Upload size={14} />}
                                                 </button>
                                             )}
                                         </div>

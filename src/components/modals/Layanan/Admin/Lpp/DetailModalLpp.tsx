@@ -1,7 +1,9 @@
+// src/components/modals/Layanan/Admin/Lpp/DetailModalLpp.tsx
+
 import React, { useState } from 'react';
 import {
     X, User, Building, Paperclip, FileCheck, Clock, Info, GraduationCap, ChevronDown, ChevronUp,
-    Mail, FileSignature, FileText, FileCheck as FileCertificateIcon, Briefcase, IdCard, Eye, ExternalLink, Award, Database
+    Mail, FileSignature, FileText, Briefcase, IdCard, Eye, ExternalLink, Award, Database
 } from 'lucide-react';
 import { StatusBadge } from '../../../../common/StatusBadge';
 import { formatDateTimeId, getInitials } from '../../../../../utils/formatters';
@@ -16,24 +18,23 @@ interface DetailModalLppProps {
 const BASE_URL_FOTO = "https://simasn.pontianak.go.id/assets/berkas/profil/";
 const BASE_URL_BERKAS = "https://simasn.pontianak.go.id/assets/berkas/Layanan/LPP/";
 
-// Map icon untuk file
 const fileIconMap: Record<string, any> = {
     Mail: Mail,
     FileSignature: FileSignature,
     FileText: FileText,
-    FileCertificate: FileCheck,
     FileCheck: FileCheck,
     GraduationCap: GraduationCap,
     Briefcase: Briefcase,
     IdCard: IdCard,
     Award: Award,
-    Database: Database
+    Database: Database,
+    Paperclip: Paperclip
 };
 
-// Map warna untuk badge
 const colorMap: Record<string, string> = {
     green: 'bg-green-50 text-green-600 border-green-200',
     blue: 'bg-blue-50 text-blue-600 border-blue-200',
+    emerald: 'bg-emerald-50 text-emerald-600 border-emerald-200',
     purple: 'bg-purple-50 text-purple-600 border-purple-200',
     indigo: 'bg-indigo-50 text-indigo-600 border-indigo-200',
     orange: 'bg-orange-50 text-orange-600 border-orange-200',
@@ -41,8 +42,9 @@ const colorMap: Record<string, string> = {
     cyan: 'bg-cyan-50 text-cyan-600 border-cyan-200',
     teal: 'bg-teal-50 text-teal-600 border-teal-200',
     rose: 'bg-rose-50 text-rose-600 border-rose-200',
-    emerald: 'bg-emerald-50 text-emerald-600 border-emerald-200',
-    pink: 'bg-pink-50 text-pink-600 border-pink-200'
+    pink: 'bg-pink-50 text-pink-600 border-pink-200',
+    red: 'bg-red-50 text-red-600 border-red-200',
+    gray: 'bg-gray-50 text-gray-600 border-gray-200'
 };
 
 export const DetailModalLpp: React.FC<DetailModalLppProps> = ({
