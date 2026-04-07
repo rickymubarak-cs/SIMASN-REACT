@@ -1,6 +1,4 @@
-// src/components/modals/Layanan/Admin/Tubel/UploadModalTubel.tsx
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Upload, FileCheck, RefreshCcw, User, GraduationCap, Building, AlertCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
@@ -24,16 +22,60 @@ export const UploadModalTubel: React.FC<UploadModalTubelProps> = ({
     const [uploadFile, setUploadFile] = useState<File | null>(null);
     const [uploading, setUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [isDragOver, setIsDragOver] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (!isOpen) {
             setUploadFile(null);
             setError(null);
             setUploading(false);
+            setIsDragOver(false);
         }
     }, [isOpen]);
 
     if (!isOpen || !data) return null;
+
+    const handleFileSelect = (file: File) => {
+        setError(null);
+
+        if (file.size > 5 * 1024 * 1024) {
+            setError("Ukuran file maksimal 5MB");
+            return false;
+        }
+
+        if (file.type !== 'application/pdf') {
+            setError("Hanya file PDF yang diperbolehkan");
+            return false;
+        }
+
+        setUploadFile(file);
+        return true;
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragOver(true);
+    };
+
+    const handleDragLeave = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragOver(false);
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragOver(false);
+
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+            const file = files[0];
+            handleFileSelect(file);
+        }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -41,16 +83,6 @@ export const UploadModalTubel: React.FC<UploadModalTubelProps> = ({
 
         if (!uploadFile) {
             setError("Pilih file terlebih dahulu");
-            return;
-        }
-
-        if (uploadFile.size > 5 * 1024 * 1024) {
-            setError("Ukuran file maksimal 5MB");
-            return;
-        }
-
-        if (uploadFile.type !== 'application/pdf') {
-            setError("Hanya file PDF yang diperbolehkan");
             return;
         }
 
@@ -96,7 +128,7 @@ export const UploadModalTubel: React.FC<UploadModalTubelProps> = ({
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative bg-white rounded-3xl max-w-md w-full shadow-2xl animate-fadeIn">
+            <div className="relative bg-white rounded-3xl max-w-md w-full shadow-2xl" style={{ animation: 'fadeIn 0.2s ease-out' }}>
                 <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-t-3xl">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
@@ -169,53 +201,84 @@ export const UploadModalTubel: React.FC<UploadModalTubelProps> = ({
                         <label className="block text-xs font-bold text-slate-600 mb-2">
                             {mode === 'edit' ? 'Berkas Baru (PDF)' : 'Berkas Hasil (PDF)'}
                         </label>
+
+                        {/* Drag and Drop Zone */}
                         <div
-                            className={`border-2 border-dashed rounded-2xl p-6 text-center transition-all cursor-pointer
-                                ${error ? 'border-red-300 bg-red-50' : 'border-slate-200 hover:border-blue-500 bg-slate-50 hover:bg-blue-50'}
+                            className={`
+                                border-2 border-dashed rounded-2xl p-6 text-center transition-all cursor-pointer
+                                ${error ? 'border-red-300 bg-red-50' : ''}
+                                ${isDragOver
+                                    ? 'border-blue-500 bg-blue-100'
+                                    : 'border-slate-200 hover:border-blue-500 bg-slate-50 hover:bg-blue-50'
+                                }
                             `}
-                            onClick={() => document.getElementById('uploadFileInputTubel')?.click()}
+                            onClick={() => fileInputRef.current?.click()}
+                            onDragOver={handleDragOver}
+                            onDragLeave={handleDragLeave}
+                            onDrop={handleDrop}
                         >
-                            <Upload size={32} className={`mx-auto mb-2 ${error ? 'text-red-400' : 'text-slate-400'}`} />
-                            <p className="text-xs font-medium text-slate-600">Klik untuk pilih file PDF</p>
-                            <p className="text-[9px] text-slate-400 mt-1">Maksimal 5MB</p>
+                            {isDragOver ? (
+                                <div className="animate-bounce">
+                                    <Upload size={32} className="mx-auto mb-2 text-blue-500" />
+                                    <p className="text-xs font-medium text-blue-600">
+                                        Lepaskan file di sini
+                                    </p>
+                                </div>
+                            ) : (
+                                <>
+                                    <Upload size={32} className={`mx-auto mb-2 ${error ? 'text-red-400' : 'text-slate-400'}`} />
+                                    <p className="text-xs font-medium text-slate-600">
+                                        Drag & Drop file PDF di sini
+                                    </p>
+                                    <p className="text-[9px] text-slate-400 mt-1">
+                                        atau klik untuk pilih file
+                                    </p>
+                                </>
+                            )}
+                            <p className="text-[9px] text-slate-400 mt-2">
+                                Maksimal 5MB
+                            </p>
                             <input
+                                ref={fileInputRef}
                                 id="uploadFileInputTubel"
                                 type="file"
                                 accept=".pdf"
                                 className="hidden"
                                 onChange={(e) => {
                                     if (e.target.files && e.target.files[0]) {
-                                        const file = e.target.files[0];
-                                        setError(null);
-                                        if (file.size > 5 * 1024 * 1024) {
-                                            setError("Ukuran file maksimal 5MB");
-                                            return;
-                                        }
-                                        if (file.type !== 'application/pdf') {
-                                            setError("Hanya file PDF yang diperbolehkan");
-                                            return;
-                                        }
-                                        setUploadFile(file);
+                                        handleFileSelect(e.target.files[0]);
                                     }
                                 }}
                             />
                         </div>
 
+                        {/* File Info Preview */}
                         {uploadFile && (
-                            <div className="mt-3 p-3 bg-green-50 rounded-xl flex items-center gap-2 border border-green-200">
+                            <div className="mt-3 p-3 bg-green-50 rounded-xl flex items-center gap-2 border border-green-200" style={{ animation: 'fadeIn 0.2s ease-out' }}>
                                 <FileCheck size={16} className="text-green-600 flex-shrink-0" />
                                 <div className="flex-1">
                                     <p className="text-xs font-medium text-green-700 truncate">{uploadFile.name}</p>
                                     <p className="text-[9px] text-green-500">{(uploadFile.size / 1024).toFixed(2)} KB</p>
                                 </div>
-                                <button onClick={() => { setUploadFile(null); setError(null); }} className="text-red-500 hover:text-red-700 transition-colors" type="button">
+                                <button
+                                    onClick={() => {
+                                        setUploadFile(null);
+                                        setError(null);
+                                        if (fileInputRef.current) {
+                                            fileInputRef.current.value = '';
+                                        }
+                                    }}
+                                    className="text-red-500 hover:text-red-700 transition-colors"
+                                    type="button"
+                                >
                                     <X size={14} />
                                 </button>
                             </div>
                         )}
 
+                        {/* Error Message */}
                         {error && (
-                            <div className="mt-3 p-2 bg-red-50 rounded-lg flex items-center gap-2">
+                            <div className="mt-3 p-2 bg-red-50 rounded-lg flex items-center gap-2" style={{ animation: 'shake 0.3s ease-in-out' }}>
                                 <AlertCircle size={14} className="text-red-500 flex-shrink-0" />
                                 <p className="text-[10px] text-red-600">{error}</p>
                             </div>
@@ -249,6 +312,26 @@ export const UploadModalTubel: React.FC<UploadModalTubelProps> = ({
                     </div>
                 </form>
             </div>
+
+            {/* Style untuk custom animations */}
+            <style>{`
+                @keyframes fadeIn {
+                    from {
+                        opacity: 0;
+                        transform: translateY(-10px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+                
+                @keyframes shake {
+                    0%, 100% { transform: translateX(0); }
+                    25% { transform: translateX(-5px); }
+                    75% { transform: translateX(5px); }
+                }
+            `}</style>
         </div>
     );
 };

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { AlertCircle, Award } from 'lucide-react';
-import { toast, Toaster } from 'react-hot-toast'; // Tambahkan toast
+import { toast, Toaster } from 'react-hot-toast';
 import { useSlksData } from '../hooks/useSlksData';
 import { Navbar } from '../components/layout/Navbar';
 import { DashboardSearchBar } from '../components/layout/DashboardSearchBar';
