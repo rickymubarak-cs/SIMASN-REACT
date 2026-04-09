@@ -21,27 +21,27 @@ const API = axios.create({
 // Tambahkan interceptor untuk logging
 API.interceptors.request.use(
     (config) => {
-        console.log(`📤 [${config.method?.toUpperCase()}] ${config.baseURL}${config.url}`);
+        // console.log(`📤 [${config.method?.toUpperCase()}] ${config.baseURL}${config.url}`);
         return config;
     },
     (error) => {
-        console.error('❌ Request Error:', error);
+        // console.error('❌ Request Error:', error);
         return Promise.reject(error);
     }
 );
 
-API.interceptors.response.use(
-    (response) => {
-        console.log(`📥 [${response.status}] ${response.config.url}`);
-        return response;
-    },
-    (error) => {
-        if (error.code === 'ECONNABORTED') {
-            console.error('❌ Request Timeout:', error.config?.url);
-        }
-        console.error('❌ Response Error:', error.response?.data || error.message);
-        return Promise.reject(error);
-    }
-);
+// API.interceptors.response.use(
+//     (response) => {
+//         console.log(`📥 [${response.status}] ${response.config.url}`);
+//         return response;
+//     },
+//     (error) => {
+//         if (error.code === 'ECONNABORTED') {
+//             console.error('❌ Request Timeout:', error.config?.url);
+//         }
+//         console.error('❌ Response Error:', error.response?.data || error.message);
+//         return Promise.reject(error);
+//     }
+// );
 
 export default API;
